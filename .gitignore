@@ -1,0 +1,23 @@
+# ===== 前端 =====
+**/node_modules/
+**/dist/
+**/.cache/
+**/pnpm-debug.log
+**/npm-debug.log
+**/npminstall-debug.log
+
+# ===== Java 后端 =====
+**/target/
+**/.classpath
+**/.project
+**/*.class
+
+# ===== IDE =====
+**/.idea/
+**/.vscode/
+**/*.iml
+**/.DS_Store
+**/Thumbs.db
+
+# ===== 上传文件 =====
+**/uploads/

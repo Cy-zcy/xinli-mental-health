@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.xinli.mapper.ForumPostMapper">
+
+    <!-- ForumPostDTO结果映射 -->
+    <resultMap id="ForumPostDTOMap" type="com.example.xinli.dto.ForumPostDTO">
+        <id property="id" column="id"/>
+        <result property="userId" column="user_id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="category" column="category"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="viewCount" column="view_count"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        
+        <!-- 嵌套用户信息 -->
+        <association property="user" javaType="com.example.xinli.dto.ForumPostDTO$UserInfo">
+            <result property="nickname" column="nickname"/>
+            <result property="phone" column="phone"/>
+        </association>
+    </resultMap>
+
+    <!-- 分页查询帖子列表 -->
+    <select id="selectPostPage" resultMap="ForumPostDTOMap">
+        SELECT fp.id, fp.user_id, fp.title, fp.content, fp.category,
+               fp.like_count, fp.view_count, fp.status,
+               fp.created_at, fp.updated_at,
+               u.nickname, u.phone
+        FROM forum_posts fp
+        LEFT JOIN users u ON fp.user_id = u.id
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND (fp.title LIKE CONCAT('%', #{keyword}, '%') 
+                     OR fp.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="category != null and category != ''">
+                AND fp.category = #{category}
+            </if>
+            <if test="status != null">
+                AND fp.status = #{status}
+            </if>
+        </where>
+        ORDER BY fp.created_at DESC
+    </select>
+
+    <!-- 查询帖子详情 -->
+    <select id="selectPostDetail" resultMap="ForumPostDTOMap">
+        SELECT fp.id, fp.user_id, fp.title, fp.content, fp.category,
+               fp.like_count, fp.view_count, fp.status,
+               fp.created_at, fp.updated_at,
+               u.nickname, u.phone
+        FROM forum_posts fp
+        LEFT JOIN users u ON fp.user_id = u.id
+        WHERE fp.id = #{postId}
+    </select>
+
+</mapper>

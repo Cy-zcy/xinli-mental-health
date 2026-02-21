@@ -1,0 +1,69 @@
+# Spring Boot 应用配置
+spring:
+  application:
+    name: xinli
+
+  # 数据库配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/mental_health?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: zcy20031118
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Web配置
+  web:
+    cors:
+      allowed-origins: "*"
+      allowed-methods: "GET,POST,PUT,DELETE,OPTIONS"
+      allowed-headers: "*"
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+      enabled: true
+
+# 服务器配置
+server:
+  port: 8080
+
+# MyBatis-Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/*.xml
+  global-config:
+    db-config:
+      id-type: auto
+
+# JWT配置 - 密钥必须至少64字符(512位)以满足HS512算法要求
+jwt:
+  secret: mySecretKey123456789ForMentalHealthPlatform2024SecureJWTKeyForHS512Algorithm
+  expiration: 86400
+
+# DeepSeek AI API配置
+deepseek:
+  api:
+    base-url: https://api.deepseek.com
+    api-key: sk-18986339435d4f6b8aa3360e52c9b35c
+    model: deepseek-chat
+    timeout: 30
+    max-retries: 3
+    temperature: 0.7
+    max-tokens: 2000
+
+# AI聊天配置
+ai:
+  chat:
+    enabled: true
+    system-prompt: "你是一个专业的心理健康AI助手，请提供温暖、专业的心理支持和建议。"
+
+# 文件上传配置
+file:
+  upload:
+    base-path: uploads
+    avatar-path: avatars
+    allowed-types: jpg,jpeg,png,gif,webp
+    max-size: 5242880  # 5MB
+    url-prefix: /uploads

@@ -1,0 +1,66 @@
+### 测试头像上传功能
+
+# 1. 先登录获取token
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{
+  "phone": "13800138000",
+  "password": "123456"
+}
+
+> {%
+client.global.set("token", response.body.data.token);
+%}
+
+###
+
+# 2. 上传头像文件
+POST http://localhost:8080/api/upload/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="avatar.jpg"
+Content-Type: image/jpeg
+
+< ./test-avatar.jpg
+--boundary--
+
+###
+
+# 3. 获取文件URL
+GET http://localhost:8080/api/upload/url?path=avatars/avatar_1_20241219120000_abc12345.jpg
+
+###
+
+# 4. 访问上传的头像文件
+GET http://localhost:8080/uploads/avatars/avatar_1_20241219120000_abc12345.jpg
+
+###
+
+# 5. 测试文件类型验证 - 上传不支持的文件类型
+POST http://localhost:8080/api/upload/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=boundary
+
+--boundary
+Content-Disposition: form-data; name="file"; filename="test.txt"
+Content-Type: text/plain
+
+This is a test file
+--boundary--
+
+###
+
+# 6. 测试文件大小限制 - 需要准备一个大于5MB的文件
+# POST http://localhost:8080/api/upload/avatar
+# Authorization: Bearer {{token}}
+# Content-Type: multipart/form-data; boundary=boundary
+# 
+# --boundary
+# Content-Disposition: form-data; name="file"; filename="large-file.jpg"
+# Content-Type: image/jpeg
+# 
+# < ./large-file.jpg
+# --boundary--
