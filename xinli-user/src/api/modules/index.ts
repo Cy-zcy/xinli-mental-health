@@ -14,5 +14,8 @@ export * as forumApi from './forum'
 // 心理测评相关API
 export * as assessmentApi from './assessment'
 
+// 心理干预资源相关API
+export * as resourceApi from './resource'
+
 // 导出类型定义
 export * from '../types'
