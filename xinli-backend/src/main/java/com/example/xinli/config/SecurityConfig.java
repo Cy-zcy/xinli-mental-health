@@ -57,6 +57,10 @@ public class SecurityConfig {
                 // 提交答卷和历史记录：由 Controller 内部自行校验 JWT（与论坛模块保持一致）
                 .requestMatchers("/api/assessment/submit").permitAll()
                 .requestMatchers("/api/assessment/history").permitAll()
+                // ===== 心理干预资源模块接口 =====
+                // 资源列表和详情：公开访问，无需登录
+                .requestMatchers("/api/resource/list").permitAll()
+                .requestMatchers("/api/resource/*").permitAll()
                 // 允许OPTIONS请求
                 .requestMatchers("OPTIONS", "/**").permitAll()
                 // 允许静态资源访问
