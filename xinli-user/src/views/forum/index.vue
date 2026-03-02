@@ -209,18 +209,10 @@ onMounted(async () => {
       <!-- 帖子列表 -->
       <div class="flex-1 overflow-y-auto">
         <!-- 下拉刷新提示 -->
-        <div v-if="refreshing" class="text-center py-4">
-          <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p class="text-sm text-gray-500">刷新中...</p>
-        </div>
+        <FmLoading v-if="refreshing" type="wave" :size="30" text="刷新中..." />
 
         <!-- 加载状态 -->
-        <div v-if="loading && posts.length === 0" class="flex items-center justify-center h-64">
-          <div class="text-center">
-            <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p class="text-gray-500">加载中...</p>
-          </div>
-        </div>
+        <FmLoading v-if="loading && posts.length === 0" type="wave" text="加载中..." />
 
         <!-- 空状态 -->
         <div v-else-if="posts.length === 0" class="flex items-center justify-center h-64">

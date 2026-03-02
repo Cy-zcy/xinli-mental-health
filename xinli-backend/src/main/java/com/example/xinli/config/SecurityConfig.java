@@ -50,6 +50,13 @@ public class SecurityConfig {
                 .requestMatchers("/api/forum/categories").permitAll()
                 .requestMatchers("/api/forum/posts").permitAll()
                 .requestMatchers("/api/forum/posts/*").permitAll()
+                // ===== 心理测评模块接口 =====
+                // 问卷列表和详情：公开访问，无需登录
+                .requestMatchers("/api/assessment/list").permitAll()
+                .requestMatchers("/api/assessment/{id}").permitAll()
+                // 提交答卷和历史记录：由 Controller 内部自行校验 JWT（与论坛模块保持一致）
+                .requestMatchers("/api/assessment/submit").permitAll()
+                .requestMatchers("/api/assessment/history").permitAll()
                 // 允许OPTIONS请求
                 .requestMatchers("OPTIONS", "/**").permitAll()
                 // 允许静态资源访问

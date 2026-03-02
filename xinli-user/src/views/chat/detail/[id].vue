@@ -102,12 +102,7 @@ onMounted(() => {
   <FmPageLayout title="对话详情" :navbar="{ back: true }" @back="goBack">
     <div class="flex flex-1 flex-col">
       <!-- 加载状态 -->
-      <div v-if="loading" class="flex items-center justify-center h-64">
-        <div class="text-center">
-          <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p class="text-gray-500">加载中...</p>
-        </div>
-      </div>
+      <FmLoading v-if="loading" type="wave" text="加载中..." />
 
       <!-- 会话信息 -->
       <div v-else-if="sessionData" class="flex flex-1 flex-col">

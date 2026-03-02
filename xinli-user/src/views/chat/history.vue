@@ -131,12 +131,7 @@ onMounted(() => {
 
       <!-- 会话列表 -->
       <div class="flex-1 overflow-y-auto">
-        <div v-if="loading && sessions.length === 0" class="flex items-center justify-center h-64">
-          <div class="text-center">
-            <div class="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-            <p class="text-gray-500">加载中...</p>
-          </div>
-        </div>
+        <FmLoading v-if="loading && sessions.length === 0" type="wave" text="加载中..." />
 
         <div v-else-if="sessions.length === 0" class="flex items-center justify-center h-64">
           <div class="text-center">
