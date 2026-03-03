@@ -25,6 +25,12 @@ export enum RoutesAlias {
   ResourceManagement = '/resource/management', // 资源列表
   ResourcePublish = '/resource/publish', // 资源发布/编辑
 
+  // 心理测评管理
+  AssessmentManagement = '/assessment/management', // 问卷列表管理
+  AssessmentQuestions = '/assessment/questions', // 问卷题目管理
+
+
+
   // AI聊天管理
   ChatManagement = '/chat/management', // AI聊天管理
 

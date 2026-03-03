@@ -101,6 +101,40 @@ export const asyncRoutes: AppRouteRecord[] = [
     ]
   },
 
+  // 心理测评管理
+  {
+    path: '/assessment',
+    name: 'AssessmentModule',
+    component: RoutesAlias.Layout,
+    meta: {
+      title: '心理测评管理',
+      icon: '&#xe7a3;',
+      roles: ['R_SUPER', 'R_ADMIN']
+    },
+    children: [
+      {
+        path: 'management',
+        name: 'AssessmentManagement',
+        component: RoutesAlias.AssessmentManagement,
+        meta: {
+          title: '问卷管理',
+          keepAlive: true
+        }
+      },
+      {
+        path: 'questions',
+        name: 'AssessmentQuestions',
+        component: RoutesAlias.AssessmentQuestions,
+        meta: {
+          title: '题目管理',
+          isHide: true,
+          keepAlive: true,
+          activePath: '/assessment/management'
+        }
+      }
+    ]
+  },
+
   // AI聊天管理
   {
     path: '/chat',
