@@ -388,16 +388,16 @@
   const fetchStats = async () => {
     try {
       const response = await DashboardService.getDashboardStats()
-      if (response.data) {
-        dashboardStats.value = response.data
+      if (response) {
+        dashboardStats.value = response
 
-        userStats.value.total = response.data.totalUsers
-        userStats.value.active = response.data.activeUsers
-        forumStats.value.activePosts = response.data.totalPosts - response.data.pendingPosts
+        userStats.value.total = response.totalUsers
+        userStats.value.active = response.activeUsers
+        forumStats.value.activePosts = response.totalPosts - response.pendingPosts
 
         nextTick(() => {
-          renderAssessmentChart(response.data as any)
-          renderTrendChart(response.data as any)
+          renderAssessmentChart(response as any)
+          renderTrendChart(response as any)
         })
       }
       await fetchChatStats()
@@ -415,8 +415,8 @@
   const fetchChatStats = async () => {
     try {
       const response = await AdminChatService.getChatStats()
-      if (response.data) {
-        chatStats.value = response.data
+      if (response) {
+        chatStats.value = response
       }
     } catch (error) {
       console.error('获取AI聊天统计数据失败:', error)
@@ -515,9 +515,9 @@
     highRiskLoading.value = true
     try {
       const res = await DashboardService.getHighRiskUsers(page, 10)
-      if (res.data) {
-        highRiskList.value = res.data.records || []
-        highRiskTotal.value = res.data.total || 0
+      if (res) {
+        highRiskList.value = res.records || []
+        highRiskTotal.value = res.total || 0
       }
     } catch (error) {
       console.error('获取高风险用户失败')
