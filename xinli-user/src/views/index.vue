@@ -34,6 +34,13 @@ const quickActions = [
     path: '/forum',
   },
   {
+    icon: 'i-ic:outline-assignment',
+    title: '心理测评',
+    subtitle: '了解自己的心理状况',
+    color: 'from-orange-400 to-rose-500',
+    path: '/assessment',
+  },
+  {
     icon: 'i-ic:outline-healing',
     title: '治愈工具',
     subtitle: '放松身心，缓解压力',
@@ -41,8 +48,15 @@ const quickActions = [
     path: '/tools',
   },
   {
+    icon: 'i-ic:outline-library-books',
+    title: '心理资源',
+    subtitle: '文章音频视频干预',
+    color: 'from-teal-400 to-cyan-500',
+    path: '/resource',
+  },
+  {
     icon: 'i-ic:outline-self-improvement',
-    title: '个人成长',
+    title: '个人中心',
     subtitle: '记录心情，追踪进步',
     color: 'from-pink-400 to-pink-600',
     path: '/profile',
@@ -114,6 +128,28 @@ function refreshTip() {
           <p class="text-gray-600 dark:text-gray-300 leading-relaxed">
             {{ todayTip }}
           </p>
+        </div>
+      </div>
+
+      <!-- 心理测评入口横幅（登录用户可见） -->
+      <div v-if="userStore.isLogin" class="mx-4 mb-5">
+        <div
+          class="bg-gradient-to-r from-orange-400 to-rose-500 rounded-2xl p-4 text-white cursor-pointer active:scale-95 transition-all duration-200 shadow-md"
+          @click="navigateTo('/assessment')"
+        >
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-base mb-1">📊 心理健康小测评</h3>
+              <p class="text-sm opacity-90">完成SDS自评量表，了解你当前的心理状态</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <FmIcon name="i-ic:outline-assignment" class="text-white text-2xl" />
+            </div>
+          </div>
+          <div class="mt-3 flex items-center text-sm opacity-90 font-medium">
+            <FmIcon name="i-ic:outline-play-circle" class="mr-1" />
+            点击开始测评 →
+          </div>
         </div>
       </div>
 
