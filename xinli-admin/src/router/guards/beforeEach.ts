@@ -236,13 +236,10 @@ async function getMenuData(router: Router): Promise<void> {
 async function processFrontendMenu(router: Router): Promise<void> {
   const menuList = asyncRoutes.map((route) => menuDataToRouter(route))
   const userStore = useUserStore()
-  const roles = userStore.info.roles
+  const roles = userStore.info.roles || []
+  const permissions = userStore.info.permissions || []
 
-  if (!roles) {
-    throw new Error('获取用户角色失败')
-  }
-
-  const filteredMenuList = filterMenuByRoles(menuList, roles)
+  const filteredMenuList = filterMenuByRoles(menuList, roles, permissions)
 
   // 添加延时以提升用户体验
   await new Promise((resolve) => setTimeout(resolve, LOADING_DELAY))
@@ -283,17 +280,31 @@ function handleMenuError(error: unknown): void {
 }
 
 /**
- * 根据角色过滤菜单
+ * 根据角色与权限标识过滤菜单
  */
-const filterMenuByRoles = (menu: AppRouteRecord[], roles: string[]): AppRouteRecord[] => {
+const filterMenuByRoles = (menu: AppRouteRecord[], roles: string[], permissions: string[]): AppRouteRecord[] => {
+  const isSuperAdmin = roles.includes('R_SUPER') || roles.includes('super_admin')
+
   return menu.reduce((acc: AppRouteRecord[], item) => {
-    const itemRoles = item.meta?.roles
-    const hasPermission = !itemRoles || itemRoles.some((role) => roles?.includes(role))
+    let hasPermission = false
+
+    if (isSuperAdmin) {
+      hasPermission = true
+    } else {
+      // 当非超管时，优先根据分配的 permissions (存储了菜单路由 name) 判定
+      if (item.name && permissions.includes(item.name as string)) {
+        hasPermission = true
+      } else {
+        // 如果没有分配 permissions，降级判断路由上的 roles 字段
+        const itemRoles = item.meta?.roles
+        hasPermission = !itemRoles || itemRoles.some((role) => roles?.includes(role))
+      }
+    }
 
     if (hasPermission) {
       const filteredItem = { ...item }
       if (filteredItem.children?.length) {
-        filteredItem.children = filterMenuByRoles(filteredItem.children, roles)
+        filteredItem.children = filterMenuByRoles(filteredItem.children, roles, permissions)
       }
       acc.push(filteredItem)
     }

@@ -14,8 +14,9 @@ public class LoginResponse {
         private Long id;
         private String username;
         private String name;
-        private String role = "admin";
-        private String[] roles = {"R_ADMIN"}; // 添加角色数组，前端需要这个格式
+        private String role;
+        private String[] roles;
+        private java.util.List<String> permissions;
     }
     
     public LoginResponse(String token, Long expiresIn, AdminInfo admin) {

@@ -9,8 +9,9 @@ public class AdminDTO {
     private Long id;
     private String username;
     private String name;
-    private String role = "admin";
-    private String[] roles = {"R_ADMIN"}; // 添加角色数组，前端需要这个格式
+    private String role;
+    private String[] roles; // 角色编码数组
+    private java.util.List<String> permissions; // 前端菜单权限标识
     private Integer status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

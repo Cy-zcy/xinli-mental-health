@@ -193,6 +193,26 @@ export const asyncRoutes: AppRouteRecord[] = [
     },
     children: [
       {
+        path: 'admin',
+        name: 'AdminManagement',
+        component: RoutesAlias.AdminManagement,
+        meta: {
+          title: '系统管理员管理',
+          keepAlive: true,
+          roles: ['R_SUPER', 'R_ADMIN', 'super_admin'] // 目前超管可见即可或者根据业务自行分配
+        }
+      },
+      {
+        path: 'role',
+        name: 'RoleManagement',
+        component: RoutesAlias.RoleManagement,
+        meta: {
+          title: '角色与权限管理',
+          keepAlive: true,
+          roles: ['R_SUPER', 'R_ADMIN', 'super_admin']
+        }
+      },
+      {
         path: 'user-center',
         name: 'UserCenter',
         component: RoutesAlias.UserCenter,

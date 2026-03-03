@@ -19,17 +19,20 @@
       <template #default>
         <ElTableColumn label="角色名称" prop="roleName" />
         <ElTableColumn label="角色编码" prop="roleCode" />
-        <ElTableColumn label="描述" prop="des" />
-        <ElTableColumn label="启用" prop="enable">
+        <ElTableColumn label="描述" prop="description" />
+        <ElTableColumn label="启用" prop="status">
           <template #default="scope">
-            <ElTag :type="scope.row.enable ? 'primary' : 'info'">
-              {{ scope.row.enable ? '启用' : '禁用' }}
-            </ElTag>
+            <ElSwitch
+              v-model="scope.row.status"
+              :active-value="1"
+              :inactive-value="0"
+              @change="handleStatusChange(scope.row)"
+            />
           </template>
         </ElTableColumn>
-        <ElTableColumn label="创建时间" prop="date">
+        <ElTableColumn label="创建时间" prop="createdAt">
           <template #default="scope">
-            {{ formatDate(scope.row.date) }}
+            {{ formatDate(scope.row.createdAt) }}
           </template>
         </ElTableColumn>
         <ElTableColumn fixed="right" label="操作" width="100px">
@@ -63,11 +66,11 @@
         <ElFormItem label="角色编码" prop="roleCode">
           <ElInput v-model="form.roleCode" />
         </ElFormItem>
-        <ElFormItem label="描述" prop="roleStatus">
-          <ElInput v-model="form.des" type="textarea" :rows="3" />
+        <ElFormItem label="描述" prop="description">
+          <ElInput v-model="form.description" type="textarea" :rows="3" />
         </ElFormItem>
         <ElFormItem label="启用">
-          <ElSwitch v-model="form.enable" />
+          <ElSwitch v-model="form.status" :active-value="1" :inactive-value="0" />
         </ElFormItem>
       </ElForm>
       <template #footer>
@@ -124,13 +127,22 @@
   import { ElMessage, ElMessageBox } from 'element-plus'
   import type { FormInstance, FormRules } from 'element-plus'
   import { formatMenuTitle } from '@/router/utils/utils'
-  import { Role, ROLE_LIST_DATA } from '@/mock/temp/formData'
   import { ButtonMoreItem } from '@/components/core/forms/art-button-more/index.vue'
+  import {
+    getRolePage,
+    createRole,
+    updateRole,
+    deleteRole,
+    updateRoleStatus,
+    getRolePermissions,
+    saveRolePermissions
+  } from '@/api/system/roleApi'
 
   defineOptions({ name: 'Role' })
 
   const dialogVisible = ref(false)
   const permissionDialog = ref(false)
+  const currentRoleId = ref<number | null>(null)
   const { menuList } = storeToRefs(useMenuStore())
   const treeRef = ref()
   const isExpandAll = ref(true)
@@ -176,22 +188,45 @@
     des: [{ required: true, message: '请输入角色描述', trigger: 'blur' }]
   })
 
-  const form = reactive<Role>({
+  interface RoleData {
+    id?: number
+    roleName: string
+    roleCode: string
+    description: string
+    status: number
+    createdAt?: string
+  }
+
+  const form = reactive<RoleData>({
     roleName: '',
     roleCode: '',
-    des: '',
-    date: '',
-    enable: true
+    description: '',
+    status: 1
   })
 
-  const roleList = ref<Role[]>([])
+  const roleList = ref<RoleData[]>([])
 
   onMounted(() => {
     getTableData()
   })
 
-  const getTableData = () => {
-    roleList.value = ROLE_LIST_DATA
+  const getTableData = async () => {
+    try {
+      const res = await getRolePage({ current: 1, size: 50 })
+      roleList.value = res.data.records
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const handleStatusChange = async (row: any) => {
+    try {
+      await updateRoleStatus(row.id, row.status)
+      ElMessage.success('状态修改成功')
+    } catch (e: any) {
+      row.status = row.status === 1 ? 0 : 1 // 还原状态
+      ElMessage.error(e.message || '修改失败')
+    }
   }
 
   const dialogType = ref('add')
@@ -201,32 +236,49 @@
     dialogType.value = type
 
     if (type === 'edit' && row) {
+      form.id = row.id
       form.roleName = row.roleName
       form.roleCode = row.roleCode
-      form.des = row.des
-      form.date = row.date
-      form.enable = row.enable
+      form.description = row.description
+      form.status = row.status
     } else {
+      delete form.id
       form.roleName = ''
       form.roleCode = ''
-      form.des = ''
-      form.date = ''
-      form.enable = true
+      form.description = ''
+      form.status = 1
     }
   }
 
   const buttonMoreClick = (item: ButtonMoreItem, row: any) => {
     if (item.key === 'permission') {
-      showPermissionDialog()
+      showPermissionDialog(row)
     } else if (item.key === 'edit') {
       showDialog('edit', row)
     } else if (item.key === 'delete') {
-      deleteRole()
+      deleteRoleHandler(row.id)
     }
   }
 
-  const showPermissionDialog = () => {
+  const showPermissionDialog = async (row: any) => {
+    currentRoleId.value = row.id
     permissionDialog.value = true
+    // 获取当前角色已有的权限标识并回显
+    try {
+      if (treeRef.value) {
+        treeRef.value.setCheckedKeys([])
+      }
+      const res = await getRolePermissions(row.id)
+      const permissions = res.data || []
+      // nextTick 保障树渲染后选中
+      nextTick(() => {
+        if (treeRef.value) {
+          treeRef.value.setCheckedKeys(permissions)
+        }
+      })
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   const defaultProps = {
@@ -234,32 +286,58 @@
     label: (data: any) => formatMenuTitle(data.meta?.title) || ''
   }
 
-  const deleteRole = () => {
+  const deleteRoleHandler = (id: number) => {
     ElMessageBox.confirm('确定删除该角色吗？', '删除确认', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'error'
-    }).then(() => {
-      ElMessage.success('删除成功')
+    }).then(async () => {
+      try {
+        await deleteRole(id)
+        ElMessage.success('删除成功')
+        getTableData()
+      } catch (e: any) {
+        ElMessage.error(e.message || '删除失败')
+      }
     })
   }
 
   const handleSubmit = async (formEl: FormInstance | undefined) => {
     if (!formEl) return
 
-    await formEl.validate((valid) => {
+    await formEl.validate(async (valid) => {
       if (valid) {
-        const message = dialogType.value === 'add' ? '新增成功' : '修改成功'
-        ElMessage.success(message)
-        dialogVisible.value = false
-        formEl.resetFields()
+        try {
+          if (dialogType.value === 'add') {
+            await createRole(form)
+            ElMessage.success('新增成功')
+          } else {
+            await updateRole(form.id as number, form)
+            ElMessage.success('修改成功')
+          }
+          dialogVisible.value = false
+          getTableData()
+        } catch (e: any) {
+          ElMessage.error(e.message || '操作失败')
+        }
       }
     })
   }
 
-  const savePermission = () => {
-    ElMessage.success('权限保存成功')
-    permissionDialog.value = false
+  const savePermission = async () => {
+    if (!currentRoleId.value || !treeRef.value) return
+    const checkedKeys = treeRef.value.getCheckedKeys()
+    // 由于有父子关联，有些框架需要同时获取半选节点 treeRef.value.getHalfCheckedKeys()，这里全获取子节点标识即可
+    const halfCheckedKeys = treeRef.value.getHalfCheckedKeys() || []
+    const allPermissions = [...checkedKeys, ...halfCheckedKeys].filter(key => typeof key === 'string')
+    
+    try {
+      await saveRolePermissions(currentRoleId.value, allPermissions as string[])
+      ElMessage.success('权限保存成功')
+      permissionDialog.value = false
+    } catch (e: any) {
+      ElMessage.error(e.message || '保存失败')
+    }
   }
 
   const toggleExpandAll = () => {
@@ -320,6 +398,7 @@
   }
 
   const formatDate = (date: string) => {
+    if (!date) return ''
     return new Date(date)
       .toLocaleString('zh-CN', {
         year: 'numeric',

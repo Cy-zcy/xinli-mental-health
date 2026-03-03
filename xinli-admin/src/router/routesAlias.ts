@@ -38,5 +38,7 @@ export enum RoutesAlias {
   UserManagement = '/user/management', // 用户管理
 
   // 系统设置
-  UserCenter = '/system/user-center' // 个人中心
+  UserCenter = '/system/user-center', // 个人中心
+  RoleManagement = '/system/role', // 角色权限管理
+  AdminManagement = '/system/admin' // 后台管理员账户管理
 }

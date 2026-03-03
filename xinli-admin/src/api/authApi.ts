@@ -21,6 +21,7 @@ export interface AdminInfo {
   name: string
   role: string
   roles: string[]
+  permissions?: string[]
   status?: number
   createdAt?: string
   updatedAt?: string
