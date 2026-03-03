@@ -33,7 +33,7 @@
             {{ useDateFormat(row.createdAt, 'YYYY-MM-DD HH:mm:ss').value }}
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="220" align="center" fixed="right">
+        <ElTableColumn label="操作" width="280" align="center" fixed="right">
           <template #default="{ row }">
             <ElButton 
               size="small" 
@@ -42,6 +42,14 @@
               @click="manageQuestions(row)"
             >
               题目管理
+            </ElButton>
+            <ElButton
+              size="small"
+              type="info"
+              plain
+              @click="openEditDialog(row)"
+            >
+              编辑
             </ElButton>
             <ElButton 
               size="small" 
@@ -76,8 +84,8 @@
       />
     </div>
 
-    <!-- 新增问卷对话框 -->
-    <ElDialog v-model="addDialogVisible" title="新增测评问卷" width="500px">
+    <!-- 新增/编辑问卷对话框 -->
+    <ElDialog v-model="addDialogVisible" :title="dialogType === 'add' ? '新增测评问卷' : '编辑测评问卷'" width="500px">
       <ElForm ref="addFormRef" :model="formData" :rules="rules" label-width="100px">
         <ElFormItem label="问卷标题" prop="title">
           <ElInput v-model="formData.title" placeholder="请输入问卷标题，如：SDS抑郁自评量表" maxlength="50" show-word-limit />
@@ -123,6 +131,8 @@ const total = ref(0)
 const isLoading = ref(true)
 
 const addDialogVisible = ref(false)
+const dialogType = ref<'add' | 'edit'>('add')
+const currentEditId = ref<number>(0)
 const addFormRef = ref<FormInstance>()
 const submitLoading = ref(false)
 const formData = ref({
@@ -181,9 +191,19 @@ const handleCurrentChange = (val: number) => {
 }
 
 const openAddDialog = () => {
+  dialogType.value = 'add'
   formData.value = { title: '', description: '' }
   addDialogVisible.value = true
-  // Reset form errors if any
+  if (addFormRef.value) {
+    addFormRef.value.clearValidate()
+  }
+}
+
+const openEditDialog = (item: AssessmentItem) => {
+  dialogType.value = 'edit'
+  currentEditId.value = item.id
+  formData.value = { title: item.title, description: item.description }
+  addDialogVisible.value = true
   if (addFormRef.value) {
     addFormRef.value.clearValidate()
   }
@@ -195,12 +215,17 @@ const submitAdd = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        await AssessmentService.createAssessment(formData.value)
-        ElMessage.success('新增成功')
+        if (dialogType.value === 'add') {
+          await AssessmentService.createAssessment(formData.value)
+          ElMessage.success('新增成功')
+        } else {
+          await AssessmentService.updateAssessment(currentEditId.value, formData.value)
+          ElMessage.success('编辑成功')
+        }
         addDialogVisible.value = false
         getAssessmentList()
       } catch (error: any) {
-        ElMessage.error(error.message || '新增失败')
+        ElMessage.error(error.message || '操作失败')
       } finally {
         submitLoading.value = false
       }

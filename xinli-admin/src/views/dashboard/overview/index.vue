@@ -214,7 +214,18 @@
         </ElCard>
       </ElCol>
 
-      <ElCol :xs="24" :lg="14">
+      <ElCol :xs="24" :lg="10">
+        <ElCard shadow="never" class="chart-card">
+          <template #header>
+            <div class="card-header">
+              <span>近期测评趋势（近半年）</span>
+            </div>
+          </template>
+          <div class="chart-container" ref="trendChartRef"></div>
+        </ElCard>
+      </ElCol>
+
+      <ElCol :xs="24" :lg="24" style="margin-top: 20px;">
         <ElCard shadow="never">
           <template #header>
             <div class="card-header">
@@ -365,9 +376,11 @@
   const userChartRef = ref()
   const postChartRef = ref()
   const assessmentChartRef = ref()
+  const trendChartRef = ref()
 
   // ECharts 实例引用
   let assessmentChart: echarts.ECharts | null = null
+  let trendChart: echarts.ECharts | null = null
 
   /**
    * 获取统计数据
@@ -380,10 +393,12 @@
 
         userStats.value.total = response.data.totalUsers
         userStats.value.active = response.data.activeUsers
-        forumStats.value.totalPosts = response.data.totalPosts
         forumStats.value.activePosts = response.data.totalPosts - response.data.pendingPosts
 
-        nextTick(() => renderAssessmentChart(response.data as DashboardStats))
+        nextTick(() => {
+          renderAssessmentChart(response.data as any)
+          renderTrendChart(response.data as any)
+        })
       }
       await fetchChatStats()
       await loadHighRiskUsers()
@@ -432,6 +447,64 @@
           { value: stats.severeCount || 0,   name: '重度抑郁' }
         ]
       }]
+    })
+  }
+
+  /**
+   * 渲染测评趋势折线图
+   */
+  const renderTrendChart = (stats: any) => {
+    if (!trendChartRef.value || !stats.trends) return
+    if (!trendChart) {
+      trendChart = echarts.init(trendChartRef.value)
+    }
+
+    const months = stats.trends.map((t: any) => t.month)
+    const totalData = stats.trends.map((t: any) => t.total)
+    const highRiskData = stats.trends.map((t: any) => t.highRisk)
+
+    trendChart.setOption({
+      tooltip: {
+        trigger: 'axis'
+      },
+      legend: {
+        data: ['总测评人数', '高危人数（重度抑郁）']
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: months
+      },
+      yAxis: {
+        type: 'value'
+      },
+      color: ['#409EFF', '#F56C6C'],
+      series: [
+        {
+          name: '总测评人数',
+          type: 'line',
+          smooth: true,
+          data: totalData,
+          areaStyle: {
+            opacity: 0.1
+          }
+        },
+        {
+          name: '高危人数（重度抑郁）',
+          type: 'line',
+          smooth: true,
+          data: highRiskData,
+          areaStyle: {
+            opacity: 0.1
+          }
+        }
+      ]
     })
   }
 
@@ -496,6 +569,7 @@
     // 监听窗口大小变化，重绘 ECharts
     window.addEventListener('resize', () => {
       assessmentChart?.resize()
+      trendChart?.resize()
     })
   })
 </script>

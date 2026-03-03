@@ -18,6 +18,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @Service
@@ -83,6 +87,34 @@ public class DashboardService {
         LambdaQueryWrapper<UserAssessmentRecord> severeWrapper = new LambdaQueryWrapper<>();
         severeWrapper.eq(UserAssessmentRecord::getResultSummary, "重度抑郁");
         stats.setSevereCount(recordMapper.selectCount(severeWrapper));
+
+        // ===== 测评趋势统计（近6个月） =====
+        List<DashboardStatsDTO.MonthlyTrend> trends = new ArrayList<>();
+        YearMonth currentMonth = YearMonth.now();
+        DateTimeFormatter monthFormatter = DateTimeFormatter.ofPattern("yyyy-MM");
+
+        for (int i = 5; i >= 0; i--) {
+            YearMonth targetMonth = currentMonth.minusMonths(i);
+            LocalDateTime monthStart = targetMonth.atDay(1).atStartOfDay();
+            LocalDateTime monthEnd = targetMonth.atEndOfMonth().atTime(23, 59, 59);
+
+            DashboardStatsDTO.MonthlyTrend trend = new DashboardStatsDTO.MonthlyTrend();
+            trend.setMonth(targetMonth.format(monthFormatter));
+
+            // 该月总评测数
+            LambdaQueryWrapper<UserAssessmentRecord> monthTotalWrapper = new LambdaQueryWrapper<>();
+            monthTotalWrapper.between(UserAssessmentRecord::getCreatedAt, monthStart, monthEnd);
+            trend.setTotal(recordMapper.selectCount(monthTotalWrapper));
+
+            // 该月高危数 (重度抑郁)
+            LambdaQueryWrapper<UserAssessmentRecord> monthHighRiskWrapper = new LambdaQueryWrapper<>();
+            monthHighRiskWrapper.between(UserAssessmentRecord::getCreatedAt, monthStart, monthEnd)
+                                .eq(UserAssessmentRecord::getResultSummary, "重度抑郁");
+            trend.setHighRisk(recordMapper.selectCount(monthHighRiskWrapper));
+
+            trends.add(trend);
+        }
+        stats.setTrends(trends);
 
         return stats;
     }

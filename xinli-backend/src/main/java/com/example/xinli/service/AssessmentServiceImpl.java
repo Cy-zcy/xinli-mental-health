@@ -110,29 +110,31 @@ public class AssessmentServiceImpl implements AssessmentService {
             totalScore = selectedOptions.stream().mapToInt(AssessmentOption::getScore).sum();
         }
 
-        // 根据分数评估结果（以SDS量表逻辑为参考）
+        // 根据分数评估结果（以SDS量表国内常模标准为参考）
         String resultSummary;
         String resultDetails;
-        // SDS 标准分 = 总粗分 * 1.25（取整），以下用粗分近似判断
-        if (totalScore < 40) {
+        // SDS 标准分 = 总粗分 * 1.25（取整）
+        int standardScore = (int) (totalScore * 1.25);
+        if (standardScore < 53) {
             resultSummary = "正常";
             resultDetails = "您目前的情绪状态良好，心理健康状况处于正常范围。建议保持积极乐观的生活态度，继续坚持健康的生活方式。";
-        } else if (totalScore < 48) {
+        } else if (standardScore <= 62) {
             resultSummary = "轻度抑郁";
-            resultDetails = "您的测评结果提示存在轻度抑郁情绪，这是一种常见且可以调整的状态。建议您：1. 尝试规律运动和充足睡眠；2. 主动与亲友倾诉；3. 可使用本平台的放松练习资源辅助调节。如持续两周以上，建议咨询专业人士。";
-        } else if (totalScore < 56) {
+            resultDetails = "您的测评结果显示标准分为 " + standardScore + "，提示存在轻度抑郁情绪。建议您：1. 尝试规律运动和充足睡眠；2. 主动与亲友倾诉；3. 可使用平台的放松练习辅助调节。如持续两周以上，建议咨询专业人士。";
+        } else if (standardScore <= 72) {
             resultSummary = "中度抑郁";
-            resultDetails = "您的测评结果提示存在中度抑郁情绪，需要认真关注。强烈建议您：1. 及时寻求专业心理咨询师的帮助；2. 与家人朋友保持联系，不要独自承受；3. 如有需要，可通过本平台预约线下咨询。请记住，中度抑郁通过专业干预是完全可以好转的。";
+            resultDetails = "您的测评结果显示标准分为 " + standardScore + "，提示存在中度抑郁情绪，需要认真关注。建议您：1. 及时寻求专业心理咨询师帮助；2. 与家人朋友保持联系，不要独自承受；3. 可通过本平台预约线下咨询。";
         } else {
             resultSummary = "重度抑郁";
-            resultDetails = "您的测评结果提示存在重度抑郁情绪，请务必重视并立即寻求专业帮助。建议您：1. 尽快联系专业精神科医生或心理咨询师；2. 告知家人或信任的朋友您的状况，请求陪伴支持；3. 如有伤害自己的念头，请立即拨打心理援助热线：400-161-9995。";
+            resultDetails = "您的测评结果显示标准分为 " + standardScore + "，提示存在重度抑郁情绪，请务必重视并立即寻求帮助。建议您：1. 尽快联系精神科医生；2. 告知家人或信任的朋友您的状况；3. 如有伤害自己的念头，请立即拨打紧急心理援助热线：400-161-9995。";
         }
 
         // 保存测评记录
         UserAssessmentRecord record = new UserAssessmentRecord();
         record.setUserId(userId);
         record.setAssessmentId(request.getAssessmentId());
-        record.setTotalScore(totalScore);
+        // 数据库目前存储粗分为 totalScore 可以保持不变，也可以记录标准分。由于前后端展示通常用最终表现分，我们存入标准分。
+        record.setTotalScore(standardScore);
         record.setResultSummary(resultSummary);
         record.setResultDetails(resultDetails);
         recordMapper.insert(record);

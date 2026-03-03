@@ -58,6 +58,21 @@ public class AdminAssessmentController {
     }
 
     /**
+     * 修改问卷
+     * PUT /api/admin/assessment/{id}
+     */
+    @PutMapping("/{id}")
+    public Result<Void> updateAssessment(@PathVariable Long id, @Valid @RequestBody Assessment assessment) {
+        try {
+            assessment.setId(id);
+            assessmentService.updateAssessment(assessment);
+            return Result.success(null, "问卷修改成功");
+        } catch (Exception e) {
+            return Result.error("修改问卷失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 3. 更新问卷状态（上架/下架）
      * PUT /api/admin/assessment/{id}/status?status=0
      */
@@ -103,6 +118,21 @@ public class AdminAssessmentController {
     }
 
     /**
+     * 修改题目
+     * PUT /api/admin/assessment/question/{id}
+     */
+    @PutMapping("/question/{id}")
+    public Result<Void> updateQuestion(@PathVariable Long id, @RequestBody AssessmentQuestion question) {
+        try {
+            question.setId(id);
+            assessmentService.updateQuestion(question);
+            return Result.success(null, "题目修改成功");
+        } catch (Exception e) {
+            return Result.error("修改题目失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 6. 删除题目（同时级联删除该题目下所有选项）
      * DELETE /api/admin/assessment/question/{id}
      */
@@ -129,6 +159,21 @@ public class AdminAssessmentController {
             return Result.success(assessmentService.createOption(option), "选项添加成功");
         } catch (Exception e) {
             return Result.error("添加选项失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 修改选项
+     * PUT /api/admin/assessment/option/{id}
+     */
+    @PutMapping("/option/{id}")
+    public Result<Void> updateOption(@PathVariable Long id, @RequestBody AssessmentOption option) {
+        try {
+            option.setId(id);
+            assessmentService.updateOption(option);
+            return Result.success(null, "选项修改成功");
+        } catch (Exception e) {
+            return Result.error("修改选项失败: " + e.getMessage());
         }
     }
 

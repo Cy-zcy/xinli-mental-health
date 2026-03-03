@@ -47,6 +47,16 @@ export class AssessmentService {
     }
 
     /**
+     * 编辑测评问卷
+     */
+    static updateAssessment(id: number, data: AssessmentFormData) {
+        return request.put<void>({
+            url: `/api/admin/assessment/${id}`,
+            data
+        } as any)
+    }
+
+    /**
      * 更新问卷状态（上架/下架）
      */
     static updateAssessmentStatus(id: number, status: number) {
@@ -78,6 +88,16 @@ export class AssessmentService {
     }
 
     /**
+     * 修改题目
+     */
+    static updateQuestion(id: number, data: { assessmentId: number; content: string; type: string; sortOrder: number }) {
+        return request.put<void>({
+            url: `/api/admin/assessment/question/${id}`,
+            data
+        } as any)
+    }
+
+    /**
      * 删除题目（级联删除选项）
      */
     static deleteQuestion(id: number) {
@@ -94,6 +114,16 @@ export class AssessmentService {
     static createOption(data: { questionId: number; content: string; score: number; sortOrder: number }) {
         return request.post<any>({
             url: '/api/admin/assessment/option',
+            data
+        } as any)
+    }
+
+    /**
+     * 修改选项
+     */
+    static updateOption(id: number, data: { questionId: number; content: string; score: number; sortOrder: number }) {
+        return request.put<void>({
+            url: `/api/admin/assessment/option/${id}`,
             data
         } as any)
     }

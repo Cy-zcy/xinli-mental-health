@@ -24,8 +24,9 @@
                   <ElTableColumn prop="sortOrder" label="排序" width="80" align="center" />
                   <ElTableColumn prop="content" label="选项内容" min-width="200" />
                   <ElTableColumn prop="score" label="分值" width="80" align="center" />
-                  <ElTableColumn label="操作" width="150" align="center" fixed="right">
+                  <ElTableColumn label="操作" width="160" align="center" fixed="right">
                     <template #default="optionProps">
+                      <ElButton size="small" type="info" plain @click="openEditOptionDialog(optionProps.row, props.row.id)">编辑</ElButton>
                       <ElButton size="small" type="danger" plain @click="handleDeleteOption(optionProps.row.id, props.row.id)">删除</ElButton>
                     </template>
                   </ElTableColumn>
@@ -43,8 +44,9 @@
             </template>
           </ElTableColumn>
           
-          <ElTableColumn label="操作" width="150" align="center" fixed="right">
+          <ElTableColumn label="操作" width="180" align="center" fixed="right">
             <template #default="{ row }">
+              <ElButton size="small" type="info" plain @click="openEditQuestionDialog(row)">编辑</ElButton>
               <ElButton size="small" type="danger" plain @click="handleDeleteQuestion(row.id)">删除</ElButton>
             </template>
           </ElTableColumn>
@@ -52,8 +54,8 @@
       </div>
     </ElCard>
 
-    <!-- 新增题目对话框 -->
-    <ElDialog v-model="addDialogVisible" title="新增题目" width="500px">
+    <!-- 新增/编辑题目对话框 -->
+    <ElDialog v-model="addDialogVisible" :title="qDialogType === 'add' ? '新增题目' : '编辑题目'" width="500px">
       <ElForm ref="addFormRef" :model="formData" :rules="rules" label-width="80px">
         <ElFormItem label="题干" prop="content">
           <ElInput v-model="formData.content" type="textarea" :rows="3" placeholder="请输入题目内容" maxlength="200" show-word-limit />
@@ -75,8 +77,8 @@
       </template>
     </ElDialog>
 
-    <!-- 新增选项对话框 -->
-    <ElDialog v-model="optionDialogVisible" title="新增选项" width="500px">
+    <!-- 新增/编辑选项对话框 -->
+    <ElDialog v-model="optionDialogVisible" :title="optDialogType === 'add' ? '新增选项' : '编辑选项'" width="500px">
       <ElForm ref="optionFormRef" :model="optionData" :rules="optionRules" label-width="80px">
         <ElFormItem label="选项内容" prop="content">
           <ElInput v-model="optionData.content" placeholder="选项文字（如：偶尔，经常）" maxlength="100" />
@@ -117,8 +119,10 @@ const assessmentTitle = ref(route.query.title as string)
 const questionList = ref<any[]>([])
 const isLoading = ref(true)
 
-// 表单部分
+// 题目标单部分
 const addDialogVisible = ref(false)
+const qDialogType = ref<'add'|'edit'>('add')
+const currentEditQId = ref<number>(0)
 const addFormRef = ref<FormInstance>()
 const submitLoading = ref(false)
 const formData = ref({
@@ -128,7 +132,10 @@ const formData = ref({
   sortOrder: 1
 })
 
+// 选项表单部分
 const optionDialogVisible = ref(false)
+const optDialogType = ref<'add'|'edit'>('add')
+const currentEditOptId = ref<number>(0)
 const optionFormRef = ref<FormInstance>()
 const optionSubmitLoading = ref(false)
 const currentQuestionIdForOption = ref<number>(0)
@@ -183,7 +190,18 @@ const loadAssessmentDetail = async () => {
 
 // ----------------- 题目管理 -----------------
 const openAddQuestionDialog = () => {
+  qDialogType.value = 'add'
   formData.value.content = ''
+  addDialogVisible.value = true
+  if (addFormRef.value) addFormRef.value.clearValidate()
+}
+
+const openEditQuestionDialog = (item: any) => {
+  qDialogType.value = 'edit'
+  currentEditQId.value = item.id
+  formData.value.content = item.content
+  formData.value.type = item.type
+  formData.value.sortOrder = item.sortOrder
   addDialogVisible.value = true
   if (addFormRef.value) addFormRef.value.clearValidate()
 }
@@ -194,17 +212,27 @@ const submitAdd = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        await AssessmentService.createQuestion({
-          assessmentId: formData.value.assessmentId,
-          content: formData.value.content,
-          type: formData.value.type,
-          sortOrder: formData.value.sortOrder
-        })
-        ElMessage.success('题目添加成功')
+        if (qDialogType.value === 'add') {
+          await AssessmentService.createQuestion({
+            assessmentId: formData.value.assessmentId,
+            content: formData.value.content,
+            type: formData.value.type,
+            sortOrder: formData.value.sortOrder
+          })
+          ElMessage.success('题目添加成功')
+        } else {
+          await AssessmentService.updateQuestion(currentEditQId.value, {
+            assessmentId: formData.value.assessmentId,
+            content: formData.value.content,
+            type: formData.value.type,
+            sortOrder: formData.value.sortOrder
+          })
+          ElMessage.success('题目修改成功')
+        }
         addDialogVisible.value = false
         loadAssessmentDetail()
       } catch (error: any) {
-        ElMessage.error(error.message || '添加失败')
+        ElMessage.error(error.message || '操作失败')
       } finally {
         submitLoading.value = false
       }
@@ -229,6 +257,7 @@ const openAddOptionDialog = (qId: number) => {
     nextSort = q.options[q.options.length - 1].sortOrder + 1
   }
   
+  optDialogType.value = 'add'
   currentQuestionIdForOption.value = qId
   optionData.value = {
     questionId: qId,
@@ -240,23 +269,47 @@ const openAddOptionDialog = (qId: number) => {
   if (optionFormRef.value) optionFormRef.value.clearValidate()
 }
 
+const openEditOptionDialog = (optItem: any, qId: number) => {
+  optDialogType.value = 'edit'
+  currentEditOptId.value = optItem.id
+  currentQuestionIdForOption.value = qId
+  optionData.value = {
+    questionId: qId,
+    content: optItem.content,
+    score: optItem.score,
+    sortOrder: optItem.sortOrder
+  }
+  optionDialogVisible.value = true
+  if (optionFormRef.value) optionFormRef.value.clearValidate()
+}
+
 const submitAddOption = async () => {
   if (!optionFormRef.value) return
   await optionFormRef.value.validate(async (valid: boolean) => {
     if (valid) {
       optionSubmitLoading.value = true
       try {
-        await AssessmentService.createOption({
-          questionId: optionData.value.questionId,
-          content: optionData.value.content,
-          score: optionData.value.score,
-          sortOrder: optionData.value.sortOrder
-        })
-        ElMessage.success('选项添加成功')
+        if (optDialogType.value === 'add') {
+          await AssessmentService.createOption({
+            questionId: optionData.value.questionId,
+            content: optionData.value.content,
+            score: optionData.value.score,
+            sortOrder: optionData.value.sortOrder
+          })
+          ElMessage.success('选项添加成功')
+        } else {
+          await AssessmentService.updateOption(currentEditOptId.value, {
+            questionId: optionData.value.questionId,
+            content: optionData.value.content,
+            score: optionData.value.score,
+            sortOrder: optionData.value.sortOrder
+          })
+          ElMessage.success('选项修改成功')
+        }
         optionDialogVisible.value = false
         loadAssessmentDetail()
       } catch (error: any) {
-        ElMessage.error(error.message || '添加失败')
+        ElMessage.error(error.message || '操作失败')
       } finally {
         optionSubmitLoading.value = false
       }
