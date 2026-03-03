@@ -19,17 +19,27 @@ const post = ref<ForumPost | null>(null)
 const isLiked = ref(false)
 const commentContent = ref('')
 const commenting = ref(false)
+// 评论列表（从后端 detail 响应中获取）
+const comments = ref<Array<{
+  id: number
+  userId: number
+  content: string
+  status: number
+  createdAt: string
+  userNickname: string
+  userAvatar: string
+}>>([])
 
-// 获取帖子详情
+// 获取帖子详情（含评论列表和点赞状态）
 async function loadPostDetail() {
   try {
     loading.value = true
     const response = await forumApi.getPostDetail(postId.value)
     post.value = response
-    
-    // 这里可以检查用户是否已点赞
-    // isLiked.value = response.isLiked || false
-    
+    // 从后端返回的 isLiked 字段正确初始化点赞状态
+    isLiked.value = (response as any).liked === true
+    // 从后端返回的 comments 字段加载评论
+    comments.value = (response as any).comments || []
   } catch (error: any) {
     console.error('加载帖子详情失败:', error)
     toast.error('加载失败', {
@@ -44,7 +54,7 @@ async function loadPostDetail() {
 // 点赞/取消点赞
 async function toggleLike() {
   if (!post.value) return
-  
+
   try {
     if (isLiked.value) {
       await forumApi.unlikePost(post.value.id)
@@ -63,26 +73,33 @@ async function toggleLike() {
   }
 }
 
-// 发表评论
+// 发表评论（接通真实API）
 async function submitComment() {
   if (!commentContent.value.trim()) {
     toast.warning('请输入评论内容')
     return
   }
-  
+
   try {
     commenting.value = true
-    // 这里需要调用评论API，暂时模拟
-    // await forumApi.createComment(postId.value, commentContent.value)
-    
+    const newComment = await forumApi.createComment(postId.value, commentContent.value.trim())
+    // 将新评论追加到本地列表，避免重新请求
+    comments.value.push({
+      id: newComment.id,
+      userId: newComment.userId,
+      content: newComment.content,
+      status: newComment.status,
+      createdAt: newComment.createdAt,
+      userNickname: newComment.userNickname,
+      userAvatar: newComment.userAvatar,
+    })
     commentContent.value = ''
     toast.success('评论发表成功')
-    
-    // 重新加载帖子详情以获取最新评论
-    await loadPostDetail()
   } catch (error: any) {
     console.error('发表评论失败:', error)
-    toast.error('发表失败')
+    toast.error('发表失败', {
+      description: error.message || '请稍后重试',
+    })
   } finally {
     commenting.value = false
   }
@@ -97,7 +114,6 @@ function sharePost() {
       url: window.location.href,
     })
   } else {
-    // 复制链接到剪贴板
     navigator.clipboard.writeText(window.location.href)
     toast.success('链接已复制到剪贴板')
   }
@@ -120,12 +136,12 @@ function formatRelativeTime(dateString: string) {
   const date = new Date(dateString)
   const now = new Date()
   const diff = now.getTime() - date.getTime()
-  
-  if (diff < 60000) { // 1分钟内
+
+  if (diff < 60000) {
     return '刚刚'
-  } else if (diff < 3600000) { // 1小时内
+  } else if (diff < 3600000) {
     return `${Math.floor(diff / 60000)}分钟前`
-  } else if (diff < 86400000) { // 24小时内
+  } else if (diff < 86400000) {
     return `${Math.floor(diff / 3600000)}小时前`
   } else {
     return date.toLocaleDateString('zh-CN')
@@ -231,15 +247,40 @@ onMounted(() => {
           <!-- 评论列表标题 -->
           <div class="p-4 border-b bg-card">
             <h3 class="font-semibold">评论区</h3>
-            <p class="text-sm text-gray-500 mt-1">暂无评论功能，敬请期待</p>
+            <p class="text-sm text-gray-500 mt-1">共 {{ comments.length }} 条评论</p>
           </div>
 
           <!-- 评论列表 -->
-          <div class="flex-1 overflow-y-auto p-4">
-            <div class="flex items-center justify-center h-32 text-gray-500">
+          <div class="flex-1 overflow-y-auto p-4 space-y-4">
+            <!-- 评论为空 -->
+            <div v-if="comments.length === 0" class="flex items-center justify-center h-32 text-gray-500">
               <div class="text-center">
                 <FmIcon name="i-carbon:chat" class="text-8 mb-2" />
-                <p>暂无评论</p>
+                <p>暂无评论，来抢沙发吧</p>
+              </div>
+            </div>
+
+            <!-- 评论列表 -->
+            <div
+              v-for="comment in comments"
+              :key="comment.id"
+              class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4"
+            >
+              <div class="flex items-start gap-3">
+                <!-- 评论者头像 -->
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center flex-shrink-0">
+                  <span class="text-white text-xs font-semibold">
+                    {{ comment.userNickname?.charAt(0) || '用' }}
+                  </span>
+                </div>
+                <!-- 评论内容 -->
+                <div class="flex-1">
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="font-medium text-sm text-gray-900 dark:text-gray-100">{{ comment.userNickname || '匿名用户' }}</span>
+                    <span class="text-xs text-gray-400">{{ formatRelativeTime(comment.createdAt) }}</span>
+                  </div>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ comment.content }}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -253,7 +294,7 @@ onMounted(() => {
                 class="flex-1"
                 :disabled="commenting"
               />
-              <FmButton 
+              <FmButton
                 @click="submitComment"
                 :loading="commenting"
                 :disabled="!commentContent.trim()"

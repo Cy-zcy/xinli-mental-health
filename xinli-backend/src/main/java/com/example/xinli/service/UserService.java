@@ -74,11 +74,8 @@ public class UserService {
         userDetail.setCommentCount(commentMapper.selectCount(commentWrapper));
         
         // 统计用户获赞数量（所有帖子的点赞总数）
-        QueryWrapper<ForumPost> likeWrapper = new QueryWrapper<>();
-        likeWrapper.eq("user_id", id);
-        likeWrapper.select("IFNULL(SUM(like_count), 0) as total_likes");
-        // 这里需要自定义SQL，暂时设为0
-        userDetail.setLikeCount(0L);
+        Long totalLikes = forumPostMapper.getTotalLikesByUserId(id);
+        userDetail.setLikeCount(totalLikes != null ? totalLikes : 0L);
         
         return userDetail;
     }

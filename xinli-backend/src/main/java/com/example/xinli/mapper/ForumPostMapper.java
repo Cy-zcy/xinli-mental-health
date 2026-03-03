@@ -23,4 +23,10 @@ public interface ForumPostMapper extends BaseMapper<ForumPost> {
      * 查询帖子详情
      */
     ForumPostDTO selectPostDetail(@Param("postId") Long postId);
+
+    /**
+     * 统计用户获赞数量（所有帖子的点赞总数）
+     */
+    @org.apache.ibatis.annotations.Select("SELECT IFNULL(SUM(like_count), 0) FROM forum_post WHERE user_id = #{userId}")
+    Long getTotalLikesByUserId(@Param("userId") Long userId);
 }

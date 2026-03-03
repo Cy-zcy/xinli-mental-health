@@ -21,6 +21,8 @@ const currentPage = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(true)
 const searchKeyword = ref('')
+// 记录当前用户已点赞的帖子 ID 集合（本地状态管理）
+const likedPostIds = ref<Set<number>>(new Set())
 
 // 获取论坛分类
 async function loadCategories() {
@@ -104,14 +106,21 @@ async function searchPosts() {
   await loadPosts(1, false)
 }
 
-// 点赞帖子
+// 点赞/取消点赞帖子
 async function toggleLike(post: ForumPost, index: number) {
   try {
-    // 这里需要根据后端API判断是点赞还是取消点赞
-    // 暂时假设总是点赞
-    await forumApi.likePost(post.id)
-    posts.value[index].likeCount++
-    toast.success('点赞成功')
+    const alreadyLiked = likedPostIds.value.has(post.id)
+    if (alreadyLiked) {
+      await forumApi.unlikePost(post.id)
+      posts.value[index].likeCount = Math.max(0, (posts.value[index].likeCount || 1) - 1)
+      likedPostIds.value.delete(post.id)
+      toast.success('已取消点赞')
+    } else {
+      await forumApi.likePost(post.id)
+      posts.value[index].likeCount = (posts.value[index].likeCount || 0) + 1
+      likedPostIds.value.add(post.id)
+      toast.success('点赞成功')
+    }
   } catch (error: any) {
     console.error('点赞失败:', error)
     toast.error('操作失败')

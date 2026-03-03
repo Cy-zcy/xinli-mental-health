@@ -84,3 +84,19 @@ export function searchPosts(params: {
     }
   })
 }
+
+/**
+ * 发表评论
+ * POST /api/forum/posts/{postId}/comments
+ */
+export function createComment(postId: number, content: string) {
+  return api.post<{
+    id: number
+    userId: number
+    content: string
+    status: number
+    createdAt: string
+    userNickname: string
+    userAvatar: string
+  }>(`/api/forum/posts/${postId}/comments`, { content })
+}

@@ -136,7 +136,33 @@ public class UserForumController {
     }
     
     /**
-     * 6. 获取论坛分类列表
+     * 6. 用户发表评论
+     * POST /api/forum/posts/{postId}/comments
+     * 需要用户认证
+     */
+    @PostMapping("/posts/{postId}/comments")
+    public Result<PostDetailDTO.CommentDTO> createComment(
+            @PathVariable Long postId,
+            @RequestBody java.util.Map<String, String> body,
+            HttpServletRequest httpRequest) {
+        try {
+            Long userId = getUserIdFromToken(httpRequest);
+            if (userId == null) {
+                return Result.error(401, "用户未登录");
+            }
+            String content = body.get("content");
+            if (content == null || content.trim().isEmpty()) {
+                return Result.error("评论内容不能为空");
+            }
+            PostDetailDTO.CommentDTO comment = userForumService.createComment(userId, postId, content.trim());
+            return Result.success(comment);
+        } catch (Exception e) {
+            return Result.error("发表评论失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 7. 获取论坛分类列表
      * GET /api/forum/categories
      * 公开接口，无需认证
      */
