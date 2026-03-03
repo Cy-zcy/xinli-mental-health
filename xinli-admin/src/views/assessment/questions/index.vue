@@ -103,6 +103,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, FormInstance } from 'element-plus'
 import { Back, Plus } from '@element-plus/icons-vue'
+import { AssessmentService } from '@/api/assessmentApi'
 import request from '@/utils/http'
 
 defineOptions({ name: 'AssessmentQuestions' })
@@ -193,7 +194,12 @@ const submitAdd = async () => {
     if (valid) {
       submitLoading.value = true
       try {
-        await request.post({ url: '/api/admin/assessment/question', data: formData.value } as any)
+        await AssessmentService.createQuestion({
+          assessmentId: formData.value.assessmentId,
+          content: formData.value.content,
+          type: formData.value.type,
+          sortOrder: formData.value.sortOrder
+        })
         ElMessage.success('题目添加成功')
         addDialogVisible.value = false
         loadAssessmentDetail()
@@ -209,7 +215,7 @@ const submitAdd = async () => {
 const handleDeleteQuestion = async (id: number) => {
   try {
     await ElMessageBox.confirm('确认删除该题目及其所有选项？', '危险操作', { type: 'error' })
-    await request.del({ url: `/api/admin/assessment/question/${id}` } as any)
+    await AssessmentService.deleteQuestion(id)
     ElMessage.success('删除成功')
     loadAssessmentDetail()
   } catch (e) { }
@@ -240,7 +246,12 @@ const submitAddOption = async () => {
     if (valid) {
       optionSubmitLoading.value = true
       try {
-        await request.post({ url: '/api/admin/assessment/option', data: optionData.value } as any)
+        await AssessmentService.createOption({
+          questionId: optionData.value.questionId,
+          content: optionData.value.content,
+          score: optionData.value.score,
+          sortOrder: optionData.value.sortOrder
+        })
         ElMessage.success('选项添加成功')
         optionDialogVisible.value = false
         loadAssessmentDetail()
@@ -256,7 +267,7 @@ const submitAddOption = async () => {
 const handleDeleteOption = async (optionId: number, questionId: number) => {
   try {
     await ElMessageBox.confirm('确认删除该选项？', '提示', { type: 'warning' })
-    await request.del({ url: `/api/admin/assessment/option/${optionId}` } as any)
+    await AssessmentService.deleteOption(optionId)
     ElMessage.success('删除成功')
     loadAssessmentDetail()
   } catch (e) { }

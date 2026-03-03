@@ -199,8 +199,57 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Transactional
     public void deleteAssessment(Long id) {
         assertmentExists(id);
-        // 级联删除题目和选项（依赖数据库外键 CASCADE 或手动删除）
+        // 手动级联删除：先删除该问卷所有题目下的选项，再删除题目，最后删除问卷
+        LambdaQueryWrapper<AssessmentQuestion> qWrapper = new LambdaQueryWrapper<>();
+        qWrapper.eq(AssessmentQuestion::getAssessmentId, id);
+        List<AssessmentQuestion> questions = questionMapper.selectList(qWrapper);
+
+        if (!questions.isEmpty()) {
+            List<Long> qIds = questions.stream().map(AssessmentQuestion::getId).collect(Collectors.toList());
+            LambdaQueryWrapper<AssessmentOption> oWrapper = new LambdaQueryWrapper<>();
+            oWrapper.in(AssessmentOption::getQuestionId, qIds);
+            optionMapper.delete(oWrapper);
+            questionMapper.delete(qWrapper);
+        }
         assessmentMapper.deleteById(id);
+    }
+
+    // ============ 题目管理 ============
+
+    @Override
+    public AssessmentQuestion createQuestion(AssessmentQuestion question) {
+        questionMapper.insert(question);
+        return question;
+    }
+
+    @Override
+    @Transactional
+    public void deleteQuestion(Long questionId) {
+        AssessmentQuestion question = questionMapper.selectById(questionId);
+        if (question == null) {
+            throw new RuntimeException("题目不存在，ID: " + questionId);
+        }
+        // 先删该题目下的所有选项
+        LambdaQueryWrapper<AssessmentOption> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(AssessmentOption::getQuestionId, questionId);
+        optionMapper.delete(wrapper);
+        questionMapper.deleteById(questionId);
+    }
+
+    // ============ 选项管理 ============
+
+    @Override
+    public AssessmentOption createOption(AssessmentOption option) {
+        optionMapper.insert(option);
+        return option;
+    }
+
+    @Override
+    public void deleteOption(Long optionId) {
+        if (optionMapper.selectById(optionId) == null) {
+            throw new RuntimeException("选项不存在，ID: " + optionId);
+        }
+        optionMapper.deleteById(optionId);
     }
 
     private Assessment assertmentExists(Long id) {
@@ -211,3 +260,4 @@ public class AssessmentServiceImpl implements AssessmentService {
         return assessment;
     }
 }
+

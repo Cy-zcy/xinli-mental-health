@@ -65,5 +65,45 @@ export class AssessmentService {
         } as any)
     }
 
-    // ========== 题目/选项相关接口后续补充 ==========
+    // ========== 题目管理 ==========
+
+    /**
+     * 新增题目
+     */
+    static createQuestion(data: { assessmentId: number; content: string; type: string; sortOrder: number }) {
+        return request.post<any>({
+            url: '/api/admin/assessment/question',
+            data
+        } as any)
+    }
+
+    /**
+     * 删除题目（级联删除选项）
+     */
+    static deleteQuestion(id: number) {
+        return request.del<void>({
+            url: `/api/admin/assessment/question/${id}`
+        } as any)
+    }
+
+    // ========== 选项管理 ==========
+
+    /**
+     * 新增选项
+     */
+    static createOption(data: { questionId: number; content: string; score: number; sortOrder: number }) {
+        return request.post<any>({
+            url: '/api/admin/assessment/option',
+            data
+        } as any)
+    }
+
+    /**
+     * 删除选项
+     */
+    static deleteOption(id: number) {
+        return request.del<void>({
+            url: `/api/admin/assessment/option/${id}`
+        } as any)
+    }
 }

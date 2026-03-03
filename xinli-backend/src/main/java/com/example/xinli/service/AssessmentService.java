@@ -5,6 +5,8 @@ import com.example.xinli.dto.AssessmentDetailDTO;
 import com.example.xinli.dto.AssessmentResultDTO;
 import com.example.xinli.dto.SubmitAssessmentRequest;
 import com.example.xinli.entity.Assessment;
+import com.example.xinli.entity.AssessmentOption;
+import com.example.xinli.entity.AssessmentQuestion;
 
 import java.util.List;
 
@@ -30,7 +32,7 @@ public interface AssessmentService {
      */
     List<AssessmentResultDTO> getUserAssessmentHistory(Long userId);
 
-    // ============ Admin 端管理接口 ============
+    // ============ Admin 端管理接口 - 问卷 ============
 
     /**
      * 获取所有问卷（含下架的），Admin端分页
@@ -48,7 +50,31 @@ public interface AssessmentService {
     void updateAssessmentStatus(Long id, Integer status);
 
     /**
-     * 删除问卷
+     * 删除问卷（级联删除题目和选项）
      */
     void deleteAssessment(Long id);
+
+    // ============ Admin 端管理接口 - 题目 ============
+
+    /**
+     * 新增题目
+     */
+    AssessmentQuestion createQuestion(AssessmentQuestion question);
+
+    /**
+     * 删除题目（级联删除该题目下的所有选项）
+     */
+    void deleteQuestion(Long questionId);
+
+    // ============ Admin 端管理接口 - 选项 ============
+
+    /**
+     * 新增选项
+     */
+    AssessmentOption createOption(AssessmentOption option);
+
+    /**
+     * 删除选项
+     */
+    void deleteOption(Long optionId);
 }

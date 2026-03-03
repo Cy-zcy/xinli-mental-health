@@ -3,6 +3,8 @@ package com.example.xinli.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.xinli.dto.Result;
 import com.example.xinli.entity.Assessment;
+import com.example.xinli.entity.AssessmentOption;
+import com.example.xinli.entity.AssessmentQuestion;
 import com.example.xinli.service.AssessmentService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +13,11 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 管理端 - 心理测评管理控制器
  * 路由前缀: /api/admin/assessment
+ *
+ * 功能：
+ * - 问卷 CRUD（增删上下架）
+ * - 题目 增删
+ * - 选项 增删
  */
 @RestController
 @RequestMapping("/api/admin/assessment")
@@ -19,6 +26,8 @@ public class AdminAssessmentController {
 
     @Autowired
     private AssessmentService assessmentService;
+
+    // ===================== 问卷管理 =====================
 
     /**
      * 1. 获取所有问卷列表（含下架，分页）
@@ -38,7 +47,6 @@ public class AdminAssessmentController {
     /**
      * 2. 新增问卷
      * POST /api/admin/assessment
-     * Body: { "title": "...", "description": "..." }
      */
     @PostMapping
     public Result<Assessment> createAssessment(@Valid @RequestBody Assessment assessment) {
@@ -65,7 +73,7 @@ public class AdminAssessmentController {
     }
 
     /**
-     * 4. 删除问卷（级联删除题目和选项）
+     * 4. 删除问卷（手动级联删除所有题目和选项）
      * DELETE /api/admin/assessment/{id}
      */
     @DeleteMapping("/{id}")
@@ -75,6 +83,66 @@ public class AdminAssessmentController {
             return Result.success(null, "问卷已删除");
         } catch (Exception e) {
             return Result.error("删除问卷失败: " + e.getMessage());
+        }
+    }
+
+    // ===================== 题目管理 =====================
+
+    /**
+     * 5. 新增题目
+     * POST /api/admin/assessment/question
+     * Body: { "assessmentId": 1, "content": "...", "type": "single_choice", "sortOrder": 1 }
+     */
+    @PostMapping("/question")
+    public Result<AssessmentQuestion> createQuestion(@RequestBody AssessmentQuestion question) {
+        try {
+            return Result.success(assessmentService.createQuestion(question), "题目添加成功");
+        } catch (Exception e) {
+            return Result.error("添加题目失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 6. 删除题目（同时级联删除该题目下所有选项）
+     * DELETE /api/admin/assessment/question/{id}
+     */
+    @DeleteMapping("/question/{id}")
+    public Result<Void> deleteQuestion(@PathVariable Long id) {
+        try {
+            assessmentService.deleteQuestion(id);
+            return Result.success(null, "题目已删除");
+        } catch (Exception e) {
+            return Result.error("删除题目失败: " + e.getMessage());
+        }
+    }
+
+    // ===================== 选项管理 =====================
+
+    /**
+     * 7. 新增选项
+     * POST /api/admin/assessment/option
+     * Body: { "questionId": 1, "content": "偶尔有", "score": 1, "sortOrder": 1 }
+     */
+    @PostMapping("/option")
+    public Result<AssessmentOption> createOption(@RequestBody AssessmentOption option) {
+        try {
+            return Result.success(assessmentService.createOption(option), "选项添加成功");
+        } catch (Exception e) {
+            return Result.error("添加选项失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 8. 删除选项
+     * DELETE /api/admin/assessment/option/{id}
+     */
+    @DeleteMapping("/option/{id}")
+    public Result<Void> deleteOption(@PathVariable Long id) {
+        try {
+            assessmentService.deleteOption(id);
+            return Result.success(null, "选项已删除");
+        } catch (Exception e) {
+            return Result.error("删除选项失败: " + e.getMessage());
         }
     }
 }
