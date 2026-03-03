@@ -21,6 +21,10 @@ export enum RoutesAlias {
   ForumManagement = '/forum/management', // 论坛帖子管理
   PostDetail = '/forum/post-detail', // 帖子详情
 
+  // 心理干预资源管理
+  ResourceManagement = '/resource/management', // 资源列表
+  ResourcePublish = '/resource/publish', // 资源发布/编辑
+
   // AI聊天管理
   ChatManagement = '/chat/management', // AI聊天管理
 

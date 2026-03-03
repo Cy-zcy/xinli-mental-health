@@ -69,6 +69,38 @@ export const asyncRoutes: AppRouteRecord[] = [
     ]
   },
 
+  // 心理健康干预资源管理
+  {
+    path: '/resource',
+    name: 'ResourceManagement',
+    component: RoutesAlias.Layout,
+    meta: {
+      title: '资源管理',
+      icon: '&#xe73e;', // 选择一个合适的 icon (也可以用其他字体图标)
+      roles: ['R_SUPER', 'R_ADMIN']
+    },
+    children: [
+      {
+        path: 'management',
+        name: 'ResourceList',
+        component: RoutesAlias.ResourceManagement,
+        meta: {
+          title: '干预资源列表',
+          keepAlive: true
+        }
+      },
+      {
+        path: 'publish',
+        name: 'ResourcePublish',
+        component: RoutesAlias.ResourcePublish,
+        meta: {
+          title: '发布干预资源',
+          keepAlive: false
+        }
+      }
+    ]
+  },
+
   // AI聊天管理
   {
     path: '/chat',
