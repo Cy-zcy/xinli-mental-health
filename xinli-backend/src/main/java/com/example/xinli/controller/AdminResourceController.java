@@ -82,11 +82,15 @@ public class AdminResourceController {
 
     /**
      * 4. 更新资源状态（上架/下架）
-     * PUT /api/admin/resource/{id}/status?status=0
+     * PUT /api/admin/resource/{id}/status
      */
     @PutMapping("/{id}/status")
-    public Result<Void> updateStatus(@PathVariable Long id, @RequestParam Integer status) {
+    public Result<Void> updateStatus(@PathVariable Long id, @RequestBody java.util.Map<String, Integer> payload) {
         try {
+            Integer status = payload.get("status");
+            if (status == null) {
+                return Result.error("缺少状态参数");
+            }
             resourceService.updateResourceStatus(id, status);
             return Result.success(null, status == 1 ? "资源已上架" : "资源已下架");
         }

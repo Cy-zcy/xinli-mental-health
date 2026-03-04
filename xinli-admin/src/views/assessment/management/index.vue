@@ -12,7 +12,7 @@
         />
       </ElCol>
       <ElCol :lg="6" :md="6" :sm="10" :xs="8" style="display: flex; justify-content: end">
-        <ElButton type="primary" @click="openAddDialog" v-auth="'add'">新增问卷</ElButton>
+        <ElButton type="primary" @click="openAddDialog">新增问卷</ElButton>
       </ElCol>
     </ElRow>
 

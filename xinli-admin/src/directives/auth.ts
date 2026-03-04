@@ -1,5 +1,6 @@
 import { router } from '@/router'
 import { App, Directive, DirectiveBinding } from 'vue'
+import { useUserStore } from '@/store/modules/user'
 
 /**
  * 权限指令（后端控制模式可用）
@@ -18,8 +19,10 @@ function checkAuthPermission(el: HTMLElement, binding: AuthBinding): void {
   // 检查是否有对应的权限标识
   const hasPermission = authList.some((item) => item.authMark === binding.value)
 
-  // 如果没有权限，移除元素
-  if (!hasPermission) {
+  // 如果没有权限，并且当前用户不是超级管理员，移除元素
+  const { info } = useUserStore()
+  if (!hasPermission && info?.username !== 'admin') {
+    // 假设系统超级管理员账号固定为 'admin'
     removeElement(el)
   }
 }

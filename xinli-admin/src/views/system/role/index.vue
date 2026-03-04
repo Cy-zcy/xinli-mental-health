@@ -212,8 +212,8 @@
 
   const getTableData = async () => {
     try {
-      const res = await getRolePage({ current: 1, size: 50 })
-      roleList.value = res.data.records
+      const res: any = await getRolePage({ current: 1, size: 50 })
+      roleList.value = res.records || []
     } catch (e) {
       console.error(e)
     }
