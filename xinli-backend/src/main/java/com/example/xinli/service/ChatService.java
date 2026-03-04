@@ -418,4 +418,48 @@ public class ChatService {
             return false;
         }
     }
+    /**
+     * 管理员端：获取聊天统计数据
+     */
+    public java.util.Map<String, Object> getAdminChatStats() {
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+
+        // 1. 总会话数
+        QueryWrapper<ChatSession> sessionWrapper = new QueryWrapper<>();
+        sessionWrapper.eq("status", 1);
+        long totalSessions = chatSessionMapper.selectCount(sessionWrapper);
+        stats.put("totalSessions", totalSessions);
+
+        // 2. 总消息数
+        QueryWrapper<ChatMessage> msgWrapper = new QueryWrapper<>();
+        msgWrapper.eq("status", 1);
+        long totalMessages = chatMessageMapper.selectCount(msgWrapper);
+        stats.put("totalMessages", totalMessages);
+
+        // 3. 总Token使用量
+        QueryWrapper<ChatMessage> tokenWrapper = new QueryWrapper<>();
+        tokenWrapper.eq("status", 1).isNotNull("tokens_used");
+        tokenWrapper.select("IFNULL(SUM(tokens_used), 0) as totalTokens");
+        java.util.Map<String, Object> tokenResult = chatMessageMapper.selectMaps(tokenWrapper).stream().findFirst().orElse(null);
+        long totalTokensUsed = tokenResult != null && tokenResult.get("totalTokens") != null ? 
+                Long.parseLong(tokenResult.get("totalTokens").toString()) : 0L;
+        stats.put("totalTokensUsed", totalTokensUsed);
+
+        // 4. 活跃用户数 (有过对话记录的用户数)
+        QueryWrapper<ChatSession> activeUserWrapper = new QueryWrapper<>();
+        activeUserWrapper.select("COUNT(DISTINCT user_id) as activeUsers").eq("status", 1);
+        java.util.Map<String, Object> userResult = chatSessionMapper.selectMaps(activeUserWrapper).stream().findFirst().orElse(null);
+        long activeUsers = userResult != null && userResult.get("activeUsers") != null ? 
+                Long.parseLong(userResult.get("activeUsers").toString()) : 0L;
+        stats.put("activeUsers", activeUsers);
+
+        // 5. 今日消息数
+        LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
+        QueryWrapper<ChatMessage> todayMsgWrapper = new QueryWrapper<>();
+        todayMsgWrapper.eq("status", 1).ge("created_at", startOfDay);
+        long todayMessages = chatMessageMapper.selectCount(todayMsgWrapper);
+        stats.put("todayMessages", todayMessages);
+
+        return stats;
+    }
 }

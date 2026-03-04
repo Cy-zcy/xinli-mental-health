@@ -171,6 +171,21 @@ public class AdminChatController {
     }
     
     /**
+     * 4. 获取聊天统计数据
+     * GET /api/admin/chat/stats
+     */
+    @GetMapping("/stats")
+    public Result<Map<String, Object>> getChatStats() {
+        try {
+            Map<String, Object> stats = chatService.getAdminChatStats();
+            return Result.success(stats);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("获取聊天统计数据失败: " + e.getMessage());
+        }
+    }
+    
+    /**
      * 聊天会话VO类
      */
     public static class ChatSessionVO {

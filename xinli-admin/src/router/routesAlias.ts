@@ -22,7 +22,7 @@ export enum RoutesAlias {
   PostDetail = '/forum/post-detail', // 帖子详情
 
   // 心理干预资源管理
-  ResourceManagement = '/resource/management', // 资源列表
+  ResourceList = '/resource/list', // 资源列表
   ResourcePublish = '/resource/publish', // 资源发布/编辑
 
   // 心理测评管理

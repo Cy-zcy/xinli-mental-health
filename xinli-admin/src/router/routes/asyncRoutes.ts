@@ -81,9 +81,9 @@ export const asyncRoutes: AppRouteRecord[] = [
     },
     children: [
       {
-        path: 'management',
+        path: 'list',
         name: 'ResourceList',
-        component: RoutesAlias.ResourceManagement,
+        component: RoutesAlias.ResourceList,
         meta: {
           title: '干预资源列表',
           keepAlive: true
