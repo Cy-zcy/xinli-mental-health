@@ -22,12 +22,12 @@
       </ElRow>
 
       <!-- 文章类型的富文本内容输入 -->
-      <div v-show="form.type === 'article'" class="el-top">
+      <div v-if="form.type === 'article'" class="el-top">
         <ArtWangEditor v-model="form.content" />
       </div>
 
       <!-- 音视频类型的富文本内容（简介）输入 -->
-      <div v-show="form.type !== 'article'" class="el-top form-wrap" style="padding-bottom: 2px;">
+      <div v-if="form.type !== 'article'" class="el-top form-wrap" style="padding-bottom: 2px;">
          <h2 style="font-size: 16px; margin-bottom: 10px;">资源简介</h2>
          <ElInput
             v-model="form.content"

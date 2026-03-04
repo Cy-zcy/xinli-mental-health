@@ -32,6 +32,10 @@ export default ({ mode }: { mode: string }) => {
           target: VITE_API_URL,
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/api/, '')
+        },
+        '/uploads': {
+          target: VITE_API_URL,
+          changeOrigin: true
         }
       },
       host: true

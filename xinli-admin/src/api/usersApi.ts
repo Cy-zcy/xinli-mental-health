@@ -13,7 +13,7 @@ export class UserService {
   // 获取用户信息
   static getUserInfo() {
     return request.get<Api.User.UserInfo>({
-      url: '/api/user/info'
+      url: '/api/admin/auth/me'
     })
   }
 
@@ -61,7 +61,7 @@ export class AdminUserService {
 
   // 删除用户
   static deleteUser(userId: number) {
-    return request.delete({
+    return request.del({
       url: `/api/admin/users/${userId}`
     })
   }

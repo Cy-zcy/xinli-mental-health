@@ -27,6 +27,11 @@ public interface InterventionResourceService {
     Page<InterventionResource> getAllResources(int page, int size, String type);
 
     /**
+     * 获取单条资源，不限上下架状态（用于 Admin 编辑回显）
+     */
+    InterventionResource getResourceById(Long id);
+
+    /**
      * 新增资源
      */
     InterventionResource createResource(InterventionResource resource);

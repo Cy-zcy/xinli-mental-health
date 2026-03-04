@@ -52,6 +52,19 @@ public class AdminResourceController {
     }
 
     /**
+     * 根据ID获取资源详情 (用于编辑)
+     * GET /api/admin/resource/{id}
+     */
+    @GetMapping("/{id}")
+    public Result<InterventionResource> getResourceById(@PathVariable Long id) {
+        try {
+            return Result.success(resourceService.getResourceById(id));
+        } catch (Exception e) {
+            return Result.error("获取资源详情失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 3. 更新资源信息
      * PUT /api/admin/resource/{id}
      */

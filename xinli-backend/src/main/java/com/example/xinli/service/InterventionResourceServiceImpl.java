@@ -66,6 +66,11 @@ public class InterventionResourceServiceImpl implements InterventionResourceServ
     }
 
     @Override
+    public InterventionResource getResourceById(Long id) {
+        return assertResourceExists(id);
+    }
+
+    @Override
     public InterventionResource createResource(InterventionResource resource) {
         resource.setStatus(1);
         resource.setViewCount(0);

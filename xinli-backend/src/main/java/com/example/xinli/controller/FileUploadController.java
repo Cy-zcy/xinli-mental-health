@@ -16,7 +16,7 @@ import java.util.Map;
  * 文件上传控制器
  */
 @RestController
-@RequestMapping("/api/upload")
+@RequestMapping("/api")
 @CrossOrigin(origins = "*")
 public class FileUploadController {
     
@@ -30,9 +30,51 @@ public class FileUploadController {
     private JwtUtil jwtUtil;
     
     /**
+     * 通用文件上传（用于封面、音视频等）
+     */
+    @PostMapping("/common/upload")
+    public Result<String> uploadCommonFile(@RequestParam("file") MultipartFile file) {
+        try {
+            // 这里为了通用，暂时借用 uploadAvatar 方法的逻辑保存文件（或者应该在 FileUploadService 中加个 uploadCommon）
+            // 因为现在没看到服务层，所以暂存为"common"前缀，0作为userId表示系统或通用
+            String relativePath = fileUploadService.uploadAvatar(file, 0L);
+            String url = fileUploadService.getFileUrl(relativePath);
+            return Result.success(url, "上传成功");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Result.error("文件上传失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * WangEditor 富文本编辑器图片上传
+     */
+    @PostMapping("/common/upload/wangeditor")
+    public Map<String, Object> uploadWangEditor(@RequestParam("file") MultipartFile file) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String relativePath = fileUploadService.uploadAvatar(file, 0L);
+            String url = fileUploadService.getFileUrl(relativePath);
+            
+            result.put("errno", 0);
+            Map<String, String> data = new HashMap<>();
+            data.put("url", url);
+            data.put("alt", file.getOriginalFilename());
+            data.put("href", url);
+            result.put("data", data);
+            
+        } catch (Exception e) {
+            e.printStackTrace();
+            result.put("errno", 1);
+            result.put("message", "图片上传失败：" + e.getMessage());
+        }
+        return result;
+    }
+
+    /**
      * 上传头像
      */
-    @PostMapping("/avatar")
+    @PostMapping("/upload/avatar")
     public Result<Map<String, Object>> uploadAvatar(
             @RequestParam("file") MultipartFile file,
             @RequestHeader("Authorization") String authHeader) {

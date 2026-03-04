@@ -6,3 +6,13 @@ dist-ssr
 *.tsbuildinfo
 .eslintcache
 .stylelintcache
+
+# Auto generated files
+auto-imports.d.ts
+components.d.ts
+typed-router.d.ts
+package-lock.json
+
+# If you use pnpm, but someone accidentally creates package-lock.json
+npm-debug.log*
+yarn-debug.log*
