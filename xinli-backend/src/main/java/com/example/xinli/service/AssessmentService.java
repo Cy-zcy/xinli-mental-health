@@ -45,6 +45,11 @@ public interface AssessmentService {
     Assessment createAssessment(Assessment assessment);
 
     /**
+     * 更新问卷基本信息
+     */
+    void updateAssessment(Assessment assessment);
+
+    /**
      * 更新问卷状态（上架/下架）
      */
     void updateAssessmentStatus(Long id, Integer status);
@@ -62,6 +67,11 @@ public interface AssessmentService {
     AssessmentQuestion createQuestion(AssessmentQuestion question);
 
     /**
+     * 修改题目
+     */
+    void updateQuestion(AssessmentQuestion question);
+
+    /**
      * 删除题目（级联删除该题目下的所有选项）
      */
     void deleteQuestion(Long questionId);
@@ -72,6 +82,11 @@ public interface AssessmentService {
      * 新增选项
      */
     AssessmentOption createOption(AssessmentOption option);
+
+    /**
+     * 修改选项
+     */
+    void updateOption(AssessmentOption option);
 
     /**
      * 删除选项

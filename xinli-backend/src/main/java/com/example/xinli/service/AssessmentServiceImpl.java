@@ -191,6 +191,12 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
+    public void updateAssessment(Assessment assessment) {
+        assertmentExists(assessment.getId());
+        assessmentMapper.updateById(assessment);
+    }
+
+    @Override
     public void updateAssessmentStatus(Long id, Integer status) {
         Assessment assessment = assertmentExists(id);
         assessment.setStatus(status);
@@ -225,6 +231,14 @@ public class AssessmentServiceImpl implements AssessmentService {
     }
 
     @Override
+    public void updateQuestion(AssessmentQuestion question) {
+        if (questionMapper.selectById(question.getId()) == null) {
+            throw new RuntimeException("题目不存在，ID: " + question.getId());
+        }
+        questionMapper.updateById(question);
+    }
+
+    @Override
     @Transactional
     public void deleteQuestion(Long questionId) {
         AssessmentQuestion question = questionMapper.selectById(questionId);
@@ -244,6 +258,14 @@ public class AssessmentServiceImpl implements AssessmentService {
     public AssessmentOption createOption(AssessmentOption option) {
         optionMapper.insert(option);
         return option;
+    }
+
+    @Override
+    public void updateOption(AssessmentOption option) {
+        if (optionMapper.selectById(option.getId()) == null) {
+            throw new RuntimeException("选项不存在，ID: " + option.getId());
+        }
+        optionMapper.updateById(option);
     }
 
     @Override

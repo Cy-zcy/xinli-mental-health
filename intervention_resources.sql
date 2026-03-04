@@ -4,7 +4,7 @@
 -- 分支：dev
 -- ============================================================
 
-USE xinli_mental;
+USE mental_health;
 
 -- 1. 心理干预资源表
 CREATE TABLE IF NOT EXISTS `intervention_resources` (
