@@ -3,6 +3,7 @@ package com.example.xinli.service;
 import com.example.xinli.config.DeepSeekProperties;
 import com.example.xinli.dto.ChatRequest;
 import com.example.xinli.dto.ChatResponse;
+import com.example.xinli.entity.AiCharacter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,6 +112,14 @@ public class DeepSeekApiService {
      */
     public ChatRequest.Message createContextualSystemMessage(String userName, int messageCount,
                                                               String coreMemory, String recalledDetails) {
+        return createContextualSystemMessage(userName, messageCount, coreMemory, recalledDetails, null);
+    }
+
+    /**
+     * 创建携带完整用户情境信息和指定AI人设的系统提示消息（混合记忆架构 + AI角色设定）
+     */
+    public ChatRequest.Message createContextualSystemMessage(String userName, int messageCount,
+                                                              String coreMemory, String recalledDetails, AiCharacter aiCharacter) {
         // 根据时间选择问候语
         int hour = java.time.LocalTime.now().getHour();
         String timeGreeting;
@@ -135,62 +144,56 @@ public class DeepSeekApiService {
             timeContext = "深夜或许是很多想法涌现的时候，也可能是感到孤独的时刻。";
         }
 
+        // 解析 AI 人设（降级为默认云朵）
+        String charName = (aiCharacter != null && aiCharacter.getName() != null) ? aiCharacter.getName() : "云朵";
+        String charBackground = (aiCharacter != null && aiCharacter.getBackground() != null) ? aiCharacter.getBackground() 
+            : "你是一个有温度的心理陪伴伙伴，名字叫\"云朵\"。你不是冷冰冰的AI助手，而是一个真正愿意倾听、关心对方的陪伴者。";
+        String charPersonality = (aiCharacter != null && aiCharacter.getPersonality() != null) ? aiCharacter.getPersonality() 
+            : "- 温暖真诚，像一个老朋友，而不是心理咨询师\n- 善于感受和回应情绪，先共情再建议\n- 偶尔用轻松的语气，让对话不那么沉重";
+        String charRules = (aiCharacter != null && aiCharacter.getRules() != null) ? aiCharacter.getRules() 
+            : "- 绝对不评判用户的感受或行为\n- 如涉及自杀/自伤风险，温和而坚定地建议拨打心理援助热线（北京：010-82951332，全国：400-161-9995）";
+        String charGreeting = (aiCharacter != null && aiCharacter.getGreeting() != null) ? aiCharacter.getGreeting() : "";
+
         // 判断是否为新会话
         String sessionContext = messageCount == 0
-                ? String.format("这是你和%s今天的第一次对话，用简短温暖的方式先打个招呼，询问ta今天感觉怎么样。", userName)
-                : String.format("你们已经聊了一会儿了，继续自然地倾听和陪伴%s。", userName);
+                ? String.format("这是你和%s今天的第一次对话，用符合你人设的方式先打个招呼。%s", userName, 
+                    charGreeting.isBlank() ? "询问ta今天感觉怎么样。" : "您可以参考这句默认开场白：'" + charGreeting + "'")
+                : String.format("你们已经聊了一会儿了，继续自然地以你的人设倾听和陪伴%s。", userName);
 
         // 构建长期记忆段落（第1层：核心摘要，始终注入，约150字上下）
         String memorySection = (coreMemory != null && !coreMemory.isBlank())
-                ? String.format("""
-
-                ## 【用户核心档案 — 极其重要，请始终牢记并体现在对话中】
-                %s
-                """, coreMemory.trim())
+                ? String.format("\n## 【用户核心档案 — 极其重要，请始终牢记并体现在对话中】\n%s\n", coreMemory.trim())
                 : "";
 
         // 构建细节检索段落（第2层：Pseudo-RAG，仅当用户触发回忆关键词时注入）
         String ragSection = (recalledDetails != null && !recalledDetails.isBlank())
-                ? String.format("""
-
-                ## 【辅助回忆档案 — 用户提及以前的事，以下是相关历史片段，请自然融入回复中】
-                %s
-                """, recalledDetails.trim())
+                ? String.format("\n## 【辅助回忆档案 — 用户提及以前的事，以下是相关历史片段，请自然融入回复中】\n%s\n", recalledDetails.trim())
                 : "";
 
         String systemPrompt = String.format("""
-                你是一个有温度的心理陪伴伙伴，名字叫"云朵"。你不是冷冰冰的AI助手，而是一个真正愿意倾听、关心对方的陪伴者。
+                %s
 
                 ## 关于用户
                 - 用户的昵称是：%s
                 - 当前时间：%s（%s）
                 - 对话状态：%s
                 %s%s
-                ## 你的性格
-                - 温暖真诚，像一个老朋友，而不是心理咨询师
-                - 善于感受和回应情绪，先共情再建议
-                - 偶尔用轻松的语气，让对话不那么沉重
-                - 记住对方说过的话，表现出你在认真倾听
-                - 不会动不动就说"建议你寻求专业帮助"——只在真正必要时才提
+                ## 你的性格与说话方式
+                %s
 
-                ## 对话方式
-                1. **先共情，后回应**：收到消息后，先用1-2句话回应对方的情绪感受，再说别的
-                2. **多用反问**：适当提问，让对方把心里的话说出来（例如"能多说说吗？""那让你感觉怎么样？"）
-                3. **不说教**：不要主动给太多建议，除非对方明确要求
-                4. **自然口语**：用口语化的中文，不要像写文章一样，可以偶尔用省略号或感叹号
-                5. **适当的存在感**：偶尔表达你也在旁边陪着（例如"我在这里陪你"、"说慢点也没关系"）
-                6. **回复长度适中**：通常3-5句话，不要一次说太多，留空间给对方回应
-
-                ## 重要原则
-                - 绝对不评判用户的感受或行为
-                - 如涉及自杀/自伤风险，温和而坚定地建议拨打心理援助热线（北京：010-82951332，全国：400-161-9995）
+                ## 对话重要原则与禁忌
+                %s
                 - 全程使用中文
                 - 不要每次都重复自我介绍
 
-                现在，请以"云朵"的身份，继续和%s聊天。
+                现在，请以"%s"的身份，继续和%s聊天。
                 """,
+                charBackground,
                 userName, timeGreeting, timeContext, sessionContext,
-                memorySection, ragSection, userName);
+                memorySection, ragSection,
+                charPersonality,
+                charRules,
+                charName, userName);
 
         ChatRequest.Message systemMessage = new ChatRequest.Message();
         systemMessage.setRole("system");

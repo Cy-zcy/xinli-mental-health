@@ -45,6 +45,9 @@ public class ChatRequest {
     public static class CreateSessionRequest {
         private String title; // 可选，会话标题
         
+        private Long characterId; // 可选，绑定的人设ID
+        
+        
         @NotBlank(message = "首条消息内容不能为空")
         private String firstMessage;
     }

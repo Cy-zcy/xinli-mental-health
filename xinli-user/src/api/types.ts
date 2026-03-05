@@ -57,6 +57,18 @@ export interface ChatSession {
   updatedAt: string
 }
 
+// AI人设类型
+export interface AiCharacter {
+  id: number
+  name: string
+  avatar: string
+  greeting: string
+  background: string
+  personality: string
+  rules: string
+  isActive: number
+}
+
 // 会话信息（用于会话列表）
 export interface SessionInfo {
   id: number
@@ -102,6 +114,7 @@ export interface SendMessageResponse {
 
 export interface CreateSessionRequest {
   title?: string
+  characterId?: number
   firstMessage: string
 }
 

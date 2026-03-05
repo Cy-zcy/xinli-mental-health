@@ -2,7 +2,7 @@
 import { toast } from 'vue-sonner'
 import { chatApi } from '@/api/modules'
 import { getResourceList, type ResourceItem } from '@/api/modules/resource'
-import type { ChatSession, ChatMessage } from '@/api/types'
+import type { ChatSession, ChatMessage, AiCharacter } from '@/api/types'
 
 definePage({
   meta: {
@@ -27,6 +27,24 @@ const recommendedResources = ref<ResourceItem[]>([])
 const showRecommendations = ref(false)
 // 用来记录当前已推荐过推荐的 sessionId
 const lastRecommendSessionId = ref<number | null>(null)
+
+// AI 角色列表
+const characters = ref<AiCharacter[]>([])
+const selectedCharacterId = ref<number | undefined>(undefined)
+
+// 加载 AI 角色
+async function loadCharacters() {
+  try {
+    const res = await chatApi.getCharacters()
+    characters.value = res || []
+    if (characters.value.length > 0) {
+      // 默认选中第一个活跃角色
+      selectedCharacterId.value = characters.value[0].id
+    }
+  } catch (error) {
+    console.warn('获取 AI 角色列表失败:', error)
+  }
+}
 
 // 获取会话列表
 async function loadSessions() {
@@ -76,7 +94,8 @@ async function createNewSession() {
   try {
     sending.value = true
     const response = await chatApi.createSession({
-      title: `新对话 ${new Date().toLocaleString()}`,
+      title: `新对话`,
+      characterId: selectedCharacterId.value,
       firstMessage: inputMessage.value.trim(),
     })
     
@@ -183,6 +202,11 @@ async function deleteSession(session: ChatSession) {
       // 选择下一个会话
       if (sessions.value.length > 0) {
         await selectSession(sessions.value[0])
+      } else {
+        // 如果删完了，重置选中角色
+        if (characters.value.length > 0) {
+          selectedCharacterId.value = characters.value[0].id
+        }
       }
     }
     
@@ -257,8 +281,9 @@ function formatTime(dateString: string) {
   }
 }
 
-// 页面加载时获取会话列表
+// 页面加载时获取会话列表及角色
 onMounted(() => {
+  loadCharacters()
   loadSessions()
 })
 </script>
@@ -297,7 +322,7 @@ onMounted(() => {
             <FmButton 
               class="w-full rounded-xl shadow-sm bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium border-0 transition-transform active:scale-95" 
               size="sm" 
-              @click="createNewSession"
+              @click="currentSession = null; messages = []"
               :loading="sending"
             >
               <FmIcon name="i-carbon:add-alt" class="mr-1" />
@@ -336,11 +361,41 @@ onMounted(() => {
             class="flex-1 overflow-y-auto p-5 space-y-6 scroll-smooth"
           >
             <div v-if="!currentSession" class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">
-              <div class="text-center transition-all">
-                <div class="w-20 h-20 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 shadow-inner">
-                  <FmIcon name="i-carbon:chat" class="text-3xl opacity-50" />
+              <div class="text-center transition-all w-full px-4 md:px-10">
+                <div class="w-16 h-16 mx-auto rounded-[16px] bg-gradient-to-tr from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mb-6 shadow-sm border border-white/50 dark:border-slate-700/30">
+                  <FmIcon name="i-carbon:chat-bot" class="text-3xl text-indigo-400 dark:text-indigo-300" />
                 </div>
-                <p class="font-medium">选择一个对话或开始新的对话</p>
+                <h3 class="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">选择您的专属心理陪伴</h3>
+                <p class="text-sm opacity-70 mb-6">不同的 AI 人格将带给您不同的治愈体验</p>
+                
+                <div class="flex flex-wrap gap-4 justify-center mt-2 max-w-4xl mx-auto">
+                  <div 
+                    v-for="char in characters" 
+                    :key="char.id" 
+                    @click="selectedCharacterId = char.id"
+                    :class="[
+                      'relative overflow-hidden border rounded-2xl p-5 w-[160px] cursor-pointer transition-all duration-300 active:scale-95 text-left', 
+                      selectedCharacterId === char.id 
+                        ? 'border-indigo-400 bg-indigo-50/80 dark:bg-indigo-900/40 shadow-md shadow-indigo-500/10' 
+                        : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm'
+                    ]"
+                  >
+                    <div v-if="selectedCharacterId === char.id" class="absolute -top-10 -right-10 w-20 h-20 bg-indigo-500/10 rounded-full blur-xl pointer-events-none"></div>
+                    <div class="flex flex-col items-center">
+                      <div class="relative mb-3">
+                        <img v-if="char.avatar" :src="char.avatar" class="w-16 h-16 rounded-full object-cover border-2 border-white dark:border-slate-700 shadow-sm" />
+                        <div v-else class="w-16 h-16 rounded-full bg-slate-200 dark:bg-slate-700 border-2 border-white dark:border-slate-600 flex items-center justify-center shadow-sm">
+                          <FmIcon name="i-carbon:user" class="text-xl text-slate-400" />
+                        </div>
+                        <div v-if="selectedCharacterId === char.id" class="absolute bottom-0 right-0 w-5 h-5 bg-green-500 border-2 border-white dark:border-slate-800 rounded-full"></div>
+                      </div>
+                      <div class="font-bold text-slate-800 dark:text-slate-200 text-[15px] mb-1">{{ char.name }}</div>
+                      <div class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 h-[32px] text-center leading-snug">{{ char.greeting }}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-if="characters.length === 0" class="text-sm opacity-50 mt-4">暂无可用的 AI 人设</div>
               </div>
             </div>
             

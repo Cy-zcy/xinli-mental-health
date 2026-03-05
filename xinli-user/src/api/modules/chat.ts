@@ -13,6 +13,7 @@ import type {
   CreateSessionRequest,
   ChatHistoryResponse,
   PageResponse,
+  AiCharacter
 } from '../types'
 
 /**
@@ -88,4 +89,12 @@ export function deleteSession(sessionId: number) {
  */
 export function testConnection() {
   return api.get<boolean>('/api/chat/test')
+}
+
+/**
+ * 获取可用的AI角色列表
+ * GET /api/chat/characters
+ */
+export function getCharacters() {
+  return api.get<AiCharacter[]>('/api/chat/characters')
 }

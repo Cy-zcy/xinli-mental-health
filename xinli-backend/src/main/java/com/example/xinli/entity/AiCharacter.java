@@ -8,24 +8,25 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 聊天会话实体类
+ * AI 多维度角色设定实体类
  */
 @Data
-@TableName("chat_sessions")
-public class ChatSession {
-    
+@TableName("ai_character")
+public class AiCharacter {
     @TableId(type = IdType.AUTO)
     private Long id;
     
-    private Long userId;
+    private String name;
+    private String avatar;
+    private String greeting;
     
-    private String title;
+    // 多维度人设
+    private String background;
+    private String personality;
+    private String rules;
     
-    private Long characterId;
-    
-    private Integer status;
+    private Integer isActive;
     
     private LocalDateTime createdAt;
-    
     private LocalDateTime updatedAt;
 }

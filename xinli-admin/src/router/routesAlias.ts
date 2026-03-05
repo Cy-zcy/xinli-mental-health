@@ -33,6 +33,7 @@ export enum RoutesAlias {
 
   // AI聊天管理
   ChatManagement = '/chat/management', // AI聊天管理
+  CharacterManagement = '/chat/character', // AI人设管理
 
   // 用户管理
   UserManagement = '/user/management', // 用户管理

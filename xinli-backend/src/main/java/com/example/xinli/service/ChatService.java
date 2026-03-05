@@ -4,9 +4,11 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.xinli.dto.ChatRequest;
 import com.example.xinli.dto.ChatResponse;
+import com.example.xinli.entity.AiCharacter;
 import com.example.xinli.entity.ChatMessage;
 import com.example.xinli.entity.ChatSession;
 import com.example.xinli.entity.User;
+import com.example.xinli.mapper.AiCharacterMapper;
 import com.example.xinli.mapper.ChatMessageMapper;
 import com.example.xinli.mapper.ChatSessionMapper;
 import com.example.xinli.mapper.UserMapper;
@@ -45,6 +47,9 @@ public class ChatService {
 
     @Autowired
     private UserMemoryService userMemoryService;
+
+    @Autowired
+    private AiCharacterMapper aiCharacterMapper;
     
     /**
      * 发送消息并获取AI回复
@@ -67,7 +72,7 @@ public class ChatService {
                 }
             } else {
                 // 创建新会话
-                session = createNewSession(userId, "新的对话");
+                session = createNewSession(userId, "新的对话", null);
             }
             
             // 3. 保存用户消息
@@ -148,7 +153,7 @@ public class ChatService {
             title = "新的对话";
         }
         
-        ChatSession session = createNewSession(userId, title);
+        ChatSession session = createNewSession(userId, title, request.getCharacterId());
         
         // 如果提供了首条消息，则保存
         if (request.getFirstMessage() != null && !request.getFirstMessage().trim().isEmpty()) {
@@ -264,10 +269,11 @@ public class ChatService {
     /**
      * 创建新会话的私有方法
      */
-    private ChatSession createNewSession(Long userId, String title) {
+    private ChatSession createNewSession(Long userId, String title, Long characterId) {
         ChatSession session = new ChatSession();
         session.setUserId(userId);
         session.setTitle(title);
+        session.setCharacterId(characterId != null ? characterId : 1L);
         session.setStatus(1);
         session.setCreatedAt(LocalDateTime.now());
         session.setUpdatedAt(LocalDateTime.now());
@@ -318,9 +324,14 @@ public class ChatService {
             }
         }
 
+        // 查询对应的 AI 角色配置
+        ChatSession session = chatSessionMapper.selectById(sessionId);
+        Long characterId = (session != null && session.getCharacterId() != null) ? session.getCharacterId() : 1L;
+        AiCharacter aiCharacter = aiCharacterMapper.selectById(characterId);
+
         // Step 5: 组装System Message（情境化人设 + 长期记忆 + 可选细节）
         messages.add(deepSeekApiService.createContextualSystemMessage(
-                userName, historyMessages.size(), coreMemory, recalledDetails));
+                userName, historyMessages.size(), coreMemory, recalledDetails, aiCharacter));
 
         // Step 6: 拼接近期对话历史
         for (ChatMessage msg : historyMessages) {

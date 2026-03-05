@@ -154,6 +154,15 @@ export const asyncRoutes: AppRouteRecord[] = [
           title: '聊天会话管理',
           keepAlive: true
         }
+      },
+      {
+        path: 'character',
+        name: 'CharacterManagement',
+        component: RoutesAlias.CharacterManagement,
+        meta: {
+          title: 'AI人设管理',
+          keepAlive: true
+        }
       }
     ]
   },
