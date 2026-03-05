@@ -16,6 +16,7 @@ import com.example.xinli.mapper.UserMapper;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -39,6 +40,11 @@ public class UserForumService {
 
     @Autowired
     private CommentMapper commentMapper;
+
+    /** 异步情感分析服务（用 @Lazy 防止循环依赖） */
+    @Lazy
+    @Autowired
+    private PostAnalysisService postAnalysisService;
 
     /**
      * 获取用户端帖子列表
@@ -109,6 +115,9 @@ public class UserForumService {
 
         int result = forumPostMapper.insert(post);
         if (result > 0) {
+            // 异步触发情感分析（不阻塞发帖响应）
+            postAnalysisService.analyzePostAsync(
+                    post.getId(), userId, post.getTitle(), post.getContent());
             return post;
         } else {
             throw new RuntimeException("发布帖子失败");
