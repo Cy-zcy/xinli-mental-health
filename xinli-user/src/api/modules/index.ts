@@ -17,5 +17,8 @@ export * as assessmentApi from './assessment'
 // 心理干预资源相关API
 export * as resourceApi from './resource'
 
+// 通知相关API
+export * as notificationApi from './notification'
+
 // 导出类型定义
 export * from '../types'

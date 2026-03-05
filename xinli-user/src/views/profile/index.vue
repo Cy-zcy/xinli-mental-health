@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
 import { getUserStats, getAchievements, getToolHistory } from '@/api/modules/tools'
+import { notificationApi } from '@/api/modules'
 import type { UserStats, Achievement } from '@/api/modules/tools'
 
 definePage({
@@ -20,6 +21,8 @@ const achievementLoading = ref(false)
 const activeTab = ref<'all' | 'earned' | 'progress'>('all')
 
 const recentActivities = ref<{id: number, icon: string, color: string, title: string, time: string}[]>([])
+
+const unreadCount = ref(0) // 未读通知数
 
 // ===== 计算属性 =====
 const earnedCount = computed(() => achievements.value.filter(a => a.earned).length)
@@ -82,7 +85,19 @@ async function loadData() {
   }
 }
 
-onMounted(loadData)
+async function loadUnreadCount() {
+  try {
+    const res = await notificationApi.getUnreadCount()
+    unreadCount.value = res.count || 0
+  } catch (error) {
+    console.error('获取未读通知数失败:', error)
+  }
+}
+
+onMounted(() => {
+  loadData()
+  loadUnreadCount()
+})
 </script>
 
 <template>
@@ -120,10 +135,18 @@ onMounted(loadData)
               </div>
             </div>
 
-            <!-- 设置按钮 -->
-            <FmButton variant="ghost" size="sm" class="text-white hover:bg-white/10" @click="navigateTo('/profile/settings')">
-              <FmIcon name="i-ic:outline-settings" class="text-xl" />
-            </FmButton>
+            <!-- 设置按钮与通知中心 -->
+            <div class="flex flex-col gap-2">
+              <FmButton variant="ghost" size="sm" class="text-white hover:bg-white/10 relative" @click="navigateTo('/profile/notifications')">
+                <FmIcon name="i-ic:outline-notifications" class="text-xl" />
+                <span v-if="unreadCount > 0" class="absolute top-0 right-0 transform translate-x-1/2 -translate-y-1/4 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-red-100 bg-red-600 rounded-full">
+                  {{ unreadCount > 99 ? '99+' : unreadCount }}
+                </span>
+              </FmButton>
+              <FmButton variant="ghost" size="sm" class="text-white hover:bg-white/10" @click="navigateTo('/profile/settings')">
+                <FmIcon name="i-ic:outline-settings" class="text-xl" />
+              </FmButton>
+            </div>
           </div>
 
           <!-- 用户统计 -->

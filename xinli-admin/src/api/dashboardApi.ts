@@ -60,11 +60,40 @@ export class DashboardService {
   /**
    * 获取极低健康分用户预警列表（< 60 分）
    */
+  /**
+   * 获取极低健康分用户预警列表（< 60 分）
+   */
   static getLowHealthScoreUsers(page = 1, size = 10) {
     return request.get<PageResult<any>>({
       url: '/api/admin/dashboard/low-health-score',
       params: { page, size }
     } as any)
   }
+
+  /**
+   * 获取 AI 检测到的高危帖子列表（riskLevel >= 2）
+   */
+  static getCrisisPosts(page = 1, size = 10) {
+    return request.get<PageResult<ForumPostAnalysis>>({
+      url: '/api/admin/dashboard/crisis-posts',
+      params: { page, size }
+    } as any)
+  }
 }
+
+// 帖子情感分析类型
+export interface ForumPostAnalysis {
+  id: number
+  postId: number
+  userId: number
+  emotionLabel: string
+  emotionTags: string
+  /** 0正常 1轻度关注 2高危 */
+  riskLevel: number
+  riskReason: string
+  aiSummary: string
+  isAlerted: number
+  createdAt: string
+}
+
 

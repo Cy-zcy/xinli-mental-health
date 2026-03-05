@@ -302,9 +302,53 @@
           </div>
         </ElCard>
       </ElCol>
+
+      <!-- 模块六：AI 论坛高危帖子预警 -->
+      <ElCol :xs="24" :lg="24" style="margin-top: 20px;">
+        <ElCard shadow="never" style="border-left: 4px solid #9C27B0;">
+          <template #header>
+            <div class="card-header">
+              <span>🤖 AI 论坛危机帖子预警</span>
+              <ElTag type="danger" effect="dark">{{ crisisPostTotal }} 条</ElTag>
+            </div>
+          </template>
+          <ElTable :data="crisisPostList" border size="small" style="width:100%" v-loading="crisisPostLoading">
+            <ElTableColumn prop="postId" label="帖子ID" width="80" align="center" />
+            <ElTableColumn prop="userId" label="用户ID" width="80" align="center" />
+            <ElTableColumn prop="emotionLabel" label="情绪标签" width="100" align="center">
+              <template #default="{ row }">
+                <ElTag type="danger" size="small">{{ row.emotionLabel }}</ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn prop="emotionTags" label="细分标签" width="200" show-overflow-tooltip />
+            <ElTableColumn prop="aiSummary" label="AI摘要" min-width="200" show-overflow-tooltip />
+            <ElTableColumn prop="riskReason" label="高危原因" min-width="180" show-overflow-tooltip />
+            <ElTableColumn prop="isAlerted" label="已通知" width="80" align="center">
+              <template #default="{ row }">
+                <ElTag :type="row.isAlerted ? 'success' : 'warning'" size="small">
+                  {{ row.isAlerted ? '已通知' : '未通知' }}
+                </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn prop="createdAt" label="检测时间" width="160" align="center" />
+          </ElTable>
+          <div style="display:flex;justify-content:center;margin-top:12px" v-if="crisisPostTotal > 10">
+            <ElPagination
+              size="small"
+              background
+              v-model:current-page="crisisPostPage"
+              :page-size="10"
+              layout="prev, pager, next"
+              :total="crisisPostTotal"
+              @current-change="loadCrisisPosts"
+            />
+          </div>
+        </ElCard>
+      </ElCol>
     </ElRow>
 
     <!-- 最新动态 -->
+
     <ElRow :gutter="20" class="activity-section">
       <ElCol :xs="24" :lg="16">
         <ElCard shadow="never" class="activity-card">
@@ -362,7 +406,7 @@
   import { ref, onMounted, nextTick } from 'vue'
   import { User, UserFilled, Document, ChatDotRound, Message, Refresh } from '@element-plus/icons-vue'
   import { ElMessage } from 'element-plus'
-  import { DashboardService, type DashboardStats, type HighRiskRecord } from '@/api/dashboardApi'
+  import { DashboardService, type DashboardStats, type HighRiskRecord, type ForumPostAnalysis } from '@/api/dashboardApi'
   import { AdminChatService } from '@/api/chatApi'
   import { useRouter } from 'vue-router'
   import * as echarts from 'echarts'
@@ -422,6 +466,13 @@
   const lowScorePage = ref(1)
   const lowScoreLoading = ref(false)
 
+  // AI 高危帖子预警
+  const crisisPostList = ref<ForumPostAnalysis[]>([])
+  const crisisPostTotal = ref(0)
+  const crisisPostPage = ref(1)
+  const crisisPostLoading = ref(false)
+
+
   // 图表容器引用
   const userChartRef = ref<HTMLElement | null>(null)
   const postChartRef = ref<HTMLElement | null>(null)
@@ -446,6 +497,23 @@
       console.error('获取健康分预警用户失败')
     } finally {
       lowScoreLoading.value = false
+  }
+
+  /**
+   * 加载 AI 危机帖子预警列表
+   */
+  const loadCrisisPosts = async (page = 1) => {
+    crisisPostLoading.value = true
+    try {
+      const res = await DashboardService.getCrisisPosts(page, 10)
+      if (res) {
+        crisisPostList.value = res.records || []
+        crisisPostTotal.value = res.total || 0
+      }
+    } catch (error) {
+      console.error('获取危机预警帖子失败')
+    } finally {
+      crisisPostLoading.value = false
     }
   }
 
@@ -470,6 +538,7 @@
       await fetchChatStats()
       await loadHighRiskUsers()
       await loadLowScoreUsers()
+      await loadCrisisPosts()
     } catch (error) {
       console.error('获取统计数据失败:', error)
       ElMessage.error('获取统计数据失败')
