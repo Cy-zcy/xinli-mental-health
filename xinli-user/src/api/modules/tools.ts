@@ -62,3 +62,29 @@ export function getToolHistory(toolType?: string, limit = 20): Promise<ToolRecor
 export function getUserStats(): Promise<UserStats> {
     return api.get('/api/user/stats')
 }
+
+// ===================== 成就系统 =====================
+
+export interface Achievement {
+    id: string
+    title: string
+    description: string
+    icon: string
+    color: string
+    /** 是否已达成 */
+    earned: boolean
+    /** 当前进度值 */
+    current: number
+    /** 达成所需目标值 */
+    target: number
+    /** 进度百分比 0-100 */
+    progress: number
+}
+
+/**
+ * 获取当前用户成就列表（含已达成 + 未达成进度）
+ * GET /api/achievements
+ */
+export function getAchievements(): Promise<Achievement[]> {
+    return api.get('/api/achievements')
+}

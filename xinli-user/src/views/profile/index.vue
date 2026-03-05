@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import { getUserStats, getAchievements } from '@/api/modules/tools'
+import type { UserStats, Achievement } from '@/api/modules/tools'
 
 definePage({
   meta: {
@@ -11,114 +13,32 @@ definePage({
 const router = useRouter()
 const userStore = useUserStore()
 
-// 用户统计数据
-const userStats = ref({
-  chatSessions: 0,
-  forumPosts: 0,
-  meditationMinutes: 0,
-  daysActive: 0,
+// ===== 状态 =====
+const userStats = ref<UserStats>({ chatSessions: 0, forumPosts: 0, totalLikes: 0, toolMinutes: 0 })
+const achievements = ref<Achievement[]>([])
+const achievementLoading = ref(false)
+const activeTab = ref<'all' | 'earned' | 'progress'>('all')
+
+// ===== 计算属性 =====
+const earnedCount = computed(() => achievements.value.filter(a => a.earned).length)
+
+const filteredAchievements = computed(() => {
+  switch (activeTab.value) {
+    case 'earned': return achievements.value.filter(a => a.earned)
+    case 'progress': return achievements.value.filter(a => !a.earned)
+    default: return achievements.value
+  }
 })
 
-// 最近活动
-const recentActivities = ref([
-  {
-    id: 1,
-    type: 'chat',
-    title: '完成了一次AI心理聊天',
-    time: '2小时前',
-    icon: 'i-ic:outline-chat',
-    color: 'text-blue-500',
-  },
-  {
-    id: 2,
-    type: 'meditation',
-    title: '完成了10分钟冥想练习',
-    time: '昨天',
-    icon: 'i-ic:outline-self-improvement',
-    color: 'text-purple-500',
-  },
-  {
-    id: 3,
-    type: 'forum',
-    title: '发布了一篇论坛帖子',
-    time: '2天前',
-    icon: 'i-ic:outline-forum',
-    color: 'text-green-500',
-  },
-])
-
-// 快捷功能
+// ===== 快捷功能 =====
 const quickActions = [
-  {
-    id: 'settings',
-    title: '设置',
-    subtitle: '个人信息与偏好',
-    icon: 'i-ic:outline-settings',
-    color: 'from-gray-400 to-gray-600',
-    path: '/profile/settings',
-  },
-  {
-    id: 'history',
-    title: '聊天记录',
-    subtitle: '查看历史对话',
-    icon: 'i-ic:outline-history',
-    color: 'from-blue-400 to-blue-600',
-    path: '/chat/history',
-  },
-  {
-    id: 'posts',
-    title: '我的帖子',
-    subtitle: '管理发布内容',
-    icon: 'i-ic:outline-article',
-    color: 'from-green-400 to-green-600',
-    path: '/profile/posts',
-  },
-  {
-    id: 'favorites',
-    title: '收藏夹',
-    subtitle: '保存的内容',
-    icon: 'i-ic:outline-bookmark',
-    color: 'from-yellow-400 to-yellow-600',
-    path: '/profile/favorites',
-  },
+  { id: 'settings', title: '设置', subtitle: '个人信息与偏好', icon: 'i-ic:outline-settings', color: 'from-gray-400 to-gray-600', path: '/profile/settings' },
+  { id: 'history', title: '聊天记录', subtitle: '查看历史对话', icon: 'i-ic:outline-history', color: 'from-blue-400 to-blue-600', path: '/chat/history' },
+  { id: 'posts', title: '我的帖子', subtitle: '管理发布内容', icon: 'i-ic:outline-article', color: 'from-green-400 to-green-600', path: '/profile/posts' },
+  { id: 'favorites', title: '工具记录', subtitle: '练习历史', icon: 'i-ic:outline-spa', color: 'from-purple-400 to-purple-600', path: '/tools' },
 ]
 
-// 成就徽章
-const achievements = [
-  {
-    id: 'first-chat',
-    title: '初次对话',
-    description: '完成第一次AI聊天',
-    icon: 'i-ic:outline-chat',
-    earned: true,
-    color: 'text-blue-500',
-  },
-  {
-    id: 'meditation-master',
-    title: '冥想达人',
-    description: '累计冥想100分钟',
-    icon: 'i-ic:outline-self-improvement',
-    earned: false,
-    color: 'text-purple-500',
-  },
-  {
-    id: 'forum-contributor',
-    title: '论坛贡献者',
-    description: '发布10篇帖子',
-    icon: 'i-ic:outline-forum',
-    earned: false,
-    color: 'text-green-500',
-  },
-  {
-    id: 'daily-user',
-    title: '每日用户',
-    description: '连续使用7天',
-    icon: 'i-ic:outline-calendar',
-    earned: true,
-    color: 'text-orange-500',
-  },
-]
-
+// ===== 方法 =====
 function navigateTo(path: string) {
   router.push(path)
 }
@@ -129,28 +49,25 @@ function logout() {
   router.push('/login')
 }
 
-// 获取用户统计数据
-async function fetchUserStats() {
+async function loadData() {
+  achievementLoading.value = true
   try {
-    // 这里应该调用API获取真实数据
-    // const stats = await userApi.getStats()
-    // userStats.value = stats
-    
-    // 模拟数据
-    userStats.value = {
-      chatSessions: 15,
-      forumPosts: 3,
-      meditationMinutes: 45,
-      daysActive: 7,
-    }
-  } catch (error) {
-    console.error('获取用户统计失败:', error)
+    const [stats, badges] = await Promise.all([
+      getUserStats(),
+      getAchievements(),
+    ])
+    userStats.value = stats
+    achievements.value = badges
+  }
+  catch (error) {
+    console.error('获取数据失败:', error)
+  }
+  finally {
+    achievementLoading.value = false
   }
 }
 
-onMounted(() => {
-  fetchUserStats()
-})
+onMounted(loadData)
 </script>
 
 <template>
@@ -205,12 +122,12 @@ onMounted(() => {
               <div class="text-xs text-white/80">发帖数</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold mb-1">{{ userStats.meditationMinutes }}</div>
-              <div class="text-xs text-white/80">冥想分钟</div>
+              <div class="text-2xl font-bold mb-1">{{ userStats.toolMinutes }}</div>
+              <div class="text-xs text-white/80">练习分钟</div>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold mb-1">{{ userStats.daysActive }}</div>
-              <div class="text-xs text-white/80">活跃天数</div>
+              <div class="text-2xl font-bold mb-1">{{ earnedCount }}</div>
+              <div class="text-xs text-white/80">已获成就</div>
             </div>
           </div>
         </div>
@@ -247,34 +164,106 @@ onMounted(() => {
       <!-- 成就徽章 -->
       <div class="px-4 pb-4">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
-          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
-            <FmIcon name="i-ic:outline-emoji-events" class="text-yellow-500" />
-            成就徽章
-          </h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div
-              v-for="achievement in achievements"
-              :key="achievement.id"
-              :class="`bg-gray-50 dark:bg-gray-700 rounded-2xl p-4 transition-all duration-200 ${
-                achievement.earned ? 'ring-2 ring-yellow-200 dark:ring-yellow-800' : 'opacity-60'
+          <!-- 标题行 -->
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white flex items-center gap-2">
+              <FmIcon name="i-ic:outline-emoji-events" class="text-yellow-500" />
+              成就徽章
+            </h3>
+            <span class="text-sm font-medium text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1 rounded-full">
+              {{ achievementLoading ? '加载中...' : `${earnedCount} / ${achievements.length}` }}
+            </span>
+          </div>
+
+          <!-- 分类 Tab -->
+          <div class="flex gap-2 mb-4">
+            <button
+              v-for="tab in [{ key: 'all', label: '全部' }, { key: 'earned', label: '已获得' }, { key: 'progress', label: '进行中' }]"
+              :key="tab.key"
+              :class="`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                activeTab === tab.key
+                  ? 'bg-yellow-500 text-white shadow-sm'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
               }`"
+              @click="activeTab = tab.key as any"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <!-- 成就列表 -->
+          <div v-if="achievementLoading" class="flex justify-center py-8">
+            <FmIcon name="i-ic:outline-sync" class="text-gray-400 text-2xl animate-spin" />
+          </div>
+          <div v-else class="space-y-3">
+            <div
+              v-for="achievement in filteredAchievements"
+              :key="achievement.id"
+              :class="`
+                rounded-2xl p-4 border transition-all duration-300
+                ${ achievement.earned
+                  ? 'bg-gradient-to-r from-yellow-50 to-amber-50 dark:from-yellow-900/10 dark:to-amber-900/10 border-yellow-200 dark:border-yellow-800 shadow-sm'
+                  : 'bg-gray-50 dark:bg-gray-700/50 border-gray-100 dark:border-gray-700'
+                }
+              `"
             >
               <div class="flex items-center gap-3">
-                <div :class="`w-12 h-12 rounded-2xl ${achievement.earned ? 'bg-gradient-to-r from-yellow-400 to-orange-500 shadow-lg' : 'bg-gray-200 dark:bg-gray-600'} flex items-center justify-center`">
-                  <FmIcon :name="achievement.icon" :class="achievement.earned ? 'text-white text-lg' : 'text-gray-400'" />
+                <!-- 图标 -->
+                <div :class="`
+                  w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0
+                  ${ achievement.earned
+                    ? 'bg-gradient-to-br from-yellow-400 to-orange-500 shadow-lg shadow-yellow-200 dark:shadow-yellow-900/30'
+                    : 'bg-gray-200 dark:bg-gray-600'
+                  }
+                `">
+                  <FmIcon
+                    :name="achievement.icon"
+                    :class="achievement.earned ? 'text-white text-lg' : 'text-gray-400 text-lg'"
+                  />
                 </div>
+
+                <!-- 文字与进度 -->
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <h4 class="font-semibold text-gray-800 dark:text-white text-sm">{{ achievement.title }}</h4>
+                  <div class="flex items-center gap-2 mb-0.5">
+                    <h4 class="font-semibold text-gray-800 dark:text-white text-sm leading-tight">
+                      {{ achievement.title }}
+                    </h4>
                     <FmIcon
                       v-if="achievement.earned"
-                      name="i-ic:outline-check-circle"
-                      class="text-green-500 text-sm"
+                      name="i-ic:outline-verified"
+                      class="text-yellow-500 text-base flex-shrink-0"
                     />
                   </div>
-                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ achievement.description }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                    {{ achievement.description }}
+                  </p>
+
+                  <!-- 进度条 -->
+                  <div class="flex items-center gap-2">
+                    <div class="flex-1 h-1.5 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                      <div
+                        :class="`h-full rounded-full transition-all duration-700 ${
+                          achievement.earned
+                            ? 'bg-gradient-to-r from-yellow-400 to-orange-400'
+                            : 'bg-gradient-to-r from-blue-400 to-purple-400'
+                        }`"
+                        :style="{ width: `${achievement.progress}%` }"
+                      />
+                    </div>
+                    <span :class="`text-xs font-medium flex-shrink-0 ${
+                      achievement.earned ? 'text-yellow-600 dark:text-yellow-400' : 'text-gray-400'
+                    }`">
+                      {{ achievement.earned ? '✓' : `${achievement.current}/${achievement.target}` }}
+                    </span>
+                  </div>
                 </div>
               </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div v-if="filteredAchievements.length === 0" class="text-center py-8 text-gray-400">
+              <FmIcon name="i-ic:outline-inbox" class="text-3xl mb-2" />
+              <p class="text-sm">暂无数据</p>
             </div>
           </div>
         </div>
