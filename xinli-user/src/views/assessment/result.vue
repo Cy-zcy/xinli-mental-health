@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import api from '@/api'
+
 definePage({
   meta: {
     title: '测评结果',
@@ -9,11 +11,15 @@ definePage({
 const route = useRoute()
 const router = useRouter()
 
-// 从路由 query 获取结果数据（由答题页携带过来）
+// 从路由 query 获取结果数据
 const title = route.query.title as string || '心理测评'
 const score = Number(route.query.score) || 0
 const summary = route.query.summary as string || ''
 const details = route.query.details as string || ''
+
+// AI 分析状态
+const aiReport = ref('')
+const aiLoading = ref(false)
 
 // 根据结论设置配色
 const colorConfig = computed(() => {
@@ -42,7 +48,28 @@ function goHistory() {
 function goChat() {
   router.push('/chat')
 }
+
+// 页面加载时自动请求 AI 个性化分析
+onMounted(async () => {
+  aiLoading.value = true
+  try {
+    const res = await api.post('/api/assessment/ai-analysis', {
+      assessmentName: title,
+      score,
+      level: summary,
+      description: details,
+    })
+    aiReport.value = (res as any)?.aiReport || ''
+  }
+  catch {
+    // 静默处理，不影响主流程
+  }
+  finally {
+    aiLoading.value = false
+  }
+})
 </script>
+
 
 <template>
   <FmPageLayout :navbar="false" :tabbar="false">
@@ -86,6 +113,45 @@ function goChat() {
           <p class="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">
             {{ details }}
           </p>
+        </div>
+
+        <!-- AI 个性化分析报告 -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-violet-100 dark:border-violet-900 overflow-hidden">
+          <!-- 标题栏 -->
+          <div class="flex items-center gap-2 px-5 py-4 bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-900/20 dark:to-indigo-900/20 border-b border-violet-100 dark:border-violet-800">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+              <FmIcon name="i-carbon:ibm-watson-assistant" class="text-white text-4" />
+            </div>
+            <div>
+              <h3 class="font-bold text-gray-900 dark:text-white text-sm">✨ AI 个性化分析</h3>
+              <p class="text-xs text-violet-500 dark:text-violet-400">基于您的测评结果智能生成</p>
+            </div>
+          </div>
+
+          <!-- 内容区 -->
+          <div class="px-5 py-4">
+            <!-- 加载骨架 -->
+            <div v-if="aiLoading" class="space-y-2">
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse w-full" />
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse w-4/5" />
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse w-full" />
+              <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse w-3/4" />
+              <p class="text-xs text-violet-400 mt-3 flex items-center gap-1">
+                <FmIcon name="i-carbon:renew" class="text-3 animate-spin" />
+                AI 正在分析您的测评结果，请稍候...
+              </p>
+            </div>
+
+            <!-- AI 生成报告 -->
+            <p v-else-if="aiReport" class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {{ aiReport }}
+            </p>
+
+            <!-- 失败占位 -->
+            <p v-else class="text-sm text-gray-400 text-center py-4">
+              AI 分析此次暂时无法生成，请稍后重试
+            </p>
+          </div>
         </div>
 
         <!-- 免责说明 -->
