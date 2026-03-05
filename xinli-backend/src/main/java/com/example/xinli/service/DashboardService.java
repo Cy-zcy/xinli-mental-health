@@ -131,4 +131,19 @@ public class DashboardService {
                .orderByDesc(UserAssessmentRecord::getCreatedAt);
         return recordMapper.selectPage(pageParam, wrapper);
     }
+    
+    /**
+     * 获取健康分预警用户（分数低于 60 分）
+     * @param page 页码
+     * @param size 每页大小
+     */
+    public Page<User> getLowHealthScoreUsers(int page, int size) {
+        Page<User> pageParam = new Page<>(page, size);
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        // 查询 healthScore 小于 60 的，按分数正序（越低越危险排前面）
+        wrapper.lt(User::getHealthScore, 60)
+               .orderByAsc(User::getHealthScore);
+        
+        return userMapper.selectPage(pageParam, wrapper);
+    }
 }

@@ -62,6 +62,13 @@
         </ElTableColumn>
         <ElTableColumn prop="nickname" label="昵称" />
         <ElTableColumn prop="phone" label="手机号" />
+        <ElTableColumn label="健康分" width="100" align="center">
+          <template #default="{ row }">
+            <ElTag :type="getScoreTagType(row.healthScore)" effect="dark">
+              {{ row.healthScore !== undefined ? row.healthScore : 100 }}
+            </ElTag>
+          </template>
+        </ElTableColumn>
         <ElTableColumn label="状态" width="100">
           <template #default="{ row }">
             <ElTag :type="row.status === 1 ? 'success' : 'danger'">
@@ -74,10 +81,13 @@
             {{ formatTime(row.createdAt) }}
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="200" fixed="right">
+        <ElTableColumn label="操作" width="240" fixed="right">
           <template #default="{ row }">
             <ElButton size="small" @click="viewUserDetail(row.id)">
               详情
+            </ElButton>
+            <ElButton size="small" type="primary" plain @click="viewHealthRecords(row)">
+              健康流水
             </ElButton>
             <ElButton
               size="small"
@@ -131,10 +141,46 @@
         <ElButton @click="detailDialogVisible = false">关闭</ElButton>
       </template>
     </ElDialog>
+
+    <!-- 健康分变动流水对话框 -->
+    <ElDialog
+      v-model="healthDialogVisible"
+      :title="`${currentHealthUser?.nickname || '用户'} 的健康分流水`"
+      width="650px"
+    >
+      <ElTable v-loading="healthLoading" :data="healthRecords" border size="small" style="width: 100%">
+        <ElTableColumn prop="scoreChange" label="变动分数" width="100" align="center">
+          <template #default="{ row }">
+            <span :style="{ color: row.scoreChange > 0 ? '#67C23A' : '#F56C6C', fontWeight: 'bold' }">
+              {{ row.scoreChange > 0 ? '+' : '' }}{{ row.scoreChange }}
+            </span>
+          </template>
+        </ElTableColumn>
+        <ElTableColumn prop="reason" label="变动原因" min-width="150" show-overflow-tooltip />
+        <ElTableColumn prop="type" label="变动类型" width="120" align="center" />
+        <ElTableColumn prop="createdAt" label="时间" width="160" align="center">
+          <template #default="{ row }">
+            {{ formatTime(row.createdAt) }}
+          </template>
+        </ElTableColumn>
+      </ElTable>
+      <div class="pagination-container" style="margin-top: 15px; text-align: center;">
+        <ElPagination
+          v-model:current-page="healthPagination.page"
+          :page-size="healthPagination.size"
+          :total="healthPagination.total"
+          layout="total, prev, pager, next"
+          background
+          size="small"
+          @current-change="loadHealthRecords"
+        />
+      </div>
+    </ElDialog>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, onMounted } from 'vue'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { formatTime } from '@/utils/format'
@@ -159,6 +205,24 @@ const pagination = ref({
   size: 10,
   total: 0
 })
+
+// 健康分流水专用的响应式数据
+const healthDialogVisible = ref(false)
+const healthLoading = ref(false)
+const healthRecords = ref<any[]>([])
+const currentHealthUser = ref<any>(null)
+const healthPagination = ref({
+  page: 1,
+  size: 10,
+  total: 0
+})
+
+// 工具方法：获取健康分的标签颜色
+const getScoreTagType = (score: number) => {
+  if (score >= 80) return 'success'
+  if (score >= 60) return 'warning'
+  return 'danger'
+}
 
 // 获取用户列表
 const fetchUserList = async () => {
@@ -261,6 +325,37 @@ const toggleUserStatus = async (user: any) => {
 const handleCloseDetail = () => {
   detailDialogVisible.value = false
   currentUser.value = null
+}
+
+// ================== 健康分变动流水能力 ==================
+// 查看健康流水详情
+const viewHealthRecords = (user: any) => {
+  currentHealthUser.value = user
+  healthPagination.value.page = 1
+  healthDialogVisible.value = true
+  loadHealthRecords()
+}
+
+// 获取健康流水数据
+const loadHealthRecords = async () => {
+  if (!currentHealthUser.value) return
+  healthLoading.value = true
+  try {
+    const res = await AdminUserService.getUserHealthScoreRecords(
+      currentHealthUser.value.id,
+      healthPagination.value.page,
+      healthPagination.value.size
+    )
+    if (res && res.data) {
+      healthRecords.value = res.data.records || []
+      healthPagination.value.total = res.data.total || 0
+    }
+  } catch (error) {
+    console.error('获取健康分流水失败', error)
+    ElMessage.error('获取健康分流水记录失败')
+  } finally {
+    healthLoading.value = false
+  }
 }
 
 // 初始化

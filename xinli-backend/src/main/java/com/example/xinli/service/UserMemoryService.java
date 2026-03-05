@@ -6,6 +6,8 @@ import com.example.xinli.entity.ChatMessage;
 import com.example.xinli.entity.UserChatMemory;
 import com.example.xinli.mapper.ChatMessageMapper;
 import com.example.xinli.mapper.UserChatMemoryMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +59,12 @@ public class UserMemoryService {
 
     @Autowired
     private DeepSeekApiService deepSeekApiService;
+
+    @Autowired
+    private UserScoreService userScoreService;
+    
+    @Autowired
+    private ObjectMapper objectMapper;
 
     // =====================================================================
     //  第1层：核心记忆（Core Memory）的读取
@@ -183,13 +191,21 @@ public class UserMemoryService {
 
             String summaryPrompt = String.format("""
                     你是一个专注于用户情绪画像的分析专家。
-                    请基于以下信息，生成一段对用户的「核心记忆描述」，使用第二人称"你对该用户的了解是："来写。
-                    要求：
-                    1. 保留用户最关键的身份信息（职业/学业/生活状态）
-                    2. 保留用户最核心的情绪困扰与模式
-                    3. 记录哪种对话方式对TA最有效
-                    4. 包含最近对话的转变或结果
-                    5. 总字数严格控制在200字以内，纯文字，无标题无列表
+                    由于本次调用是由系统的异步任务触发的，请从下面提供的用户近期对话中，提取出两部分信息，并**强制以JSON格式**返回。
+                    
+                    这部分JSON必须包含以下字段：
+                    1. "coreMemory": 字符串。一段对用户的「核心记忆描述」，使用第二人称"你对该用户的了解是："来写。要求：
+                       - 保留用户最核心的情绪困扰与模式
+                       - 记录哪种对话方式对TA最有效
+                       - 包含最近对话的转变或结果
+                       - 总字数严格控制在200字以内。
+                       
+                    2. "scoreChange": 整数。根据这数十条对话的总体情绪倾向，给出心理健康分的加扣分建议。
+                       - 如果整体情绪为"沉重/极度焦虑/悲观/绝望"，根据严重程度返回 -2 到 -10（如提及轻生等极端意图返回 -30）
+                       - 如果整体情绪为"积极/释怀/好转"，根据好转程度返回 +1 到 +3
+                       - 如果情绪平稳或无明显波动，返回 0
+                       
+                    3. "scoreReason": 字符串。给出评分的核心理由（20字以内）。
 
                     【已有的旧记忆】：
                     %s
@@ -197,17 +213,56 @@ public class UserMemoryService {
                     【本次新增的对话内容】：
                     %s
 
-                    请直接输出新的核心记忆描述，无需任何说明。
+                    切记只能输出合法标准的JSON字符串，不能包裹```json```标签。
                     """, oldMemory, recentChat);
 
             List<ChatRequest.Message> summaryMessages = List.of(
-                    buildMsg("system", "你是用户情绪与状态的专业分析助手，专注于提炼用户的关键心理状态。"),
+                    buildMsg("system", "你是用户情绪与状态的专业分析助手，必须全盘使用JSON返回结果。"),
                     buildMsg("user", summaryPrompt)
             );
 
-            // 调用 DeepSeek 生成新摘要（同步，该方法本身已是异步线程）
-            String newMemory = deepSeekApiService.sendChatRequest(summaryMessages).block()
+            // 调用 DeepSeek 生成新摘要（同步阻塞，因为该方法本身已在 @Async 线程中运行）
+            String responseText = deepSeekApiService.sendChatRequest(summaryMessages).block()
                     .getContent();
+            
+            // 解析 JSON 结果
+            String newMemory = oldMemory; // 备用
+            if (responseText != null) {
+                try {
+                    // 去除可能存在的 markdown json 标记
+                    String jsonStr = responseText.trim();
+                    if (jsonStr.startsWith("```json")) {
+                        jsonStr = jsonStr.substring(7);
+                    }
+                    if (jsonStr.startsWith("```")) {
+                        jsonStr = jsonStr.substring(3);
+                    }
+                    if (jsonStr.endsWith("```")) {
+                        jsonStr = jsonStr.substring(0, jsonStr.length() - 3);
+                    }
+                    
+                    JsonNode root = objectMapper.readTree(jsonStr.trim());
+                    if (root.has("coreMemory")) {
+                        newMemory = root.get("coreMemory").asText();
+                    }
+                    
+                    // ================= 核心：联动健康分模块 =================
+                    if (root.has("scoreChange")) {
+                        int scoreChange = root.get("scoreChange").asInt();
+                        if (scoreChange != 0) {
+                            String reason = root.has("scoreReason") ? root.get("scoreReason").asText() : "AI 对话周期情绪综合评估";
+                            userScoreService.changeScore(userId, scoreChange, reason, "CHAT");
+                            log.info("用户 {} 聊天触发 AI 健康分变动: {} 分", userId, scoreChange);
+                        }
+                    }
+                    // ==========================================================
+                    
+                } catch (Exception e) {
+                    log.error("解析 AI 记忆生成的 JSON 失败，原文: {}, 错误: {}", responseText, e.getMessage());
+                    // 容错：如果 JSON 解析彻底失败，把返回文本直接塞给记忆（非最佳实践但防丢）
+                    newMemory = responseText;
+                }
+            }
 
             // 截断，确保不超长
             if (newMemory != null && newMemory.length() > CORE_MEMORY_MAX_CHARS) {

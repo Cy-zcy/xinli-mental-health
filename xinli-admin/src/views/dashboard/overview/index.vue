@@ -229,7 +229,7 @@
         <ElCard shadow="never">
           <template #header>
             <div class="card-header">
-              <span>⚠️ 高风险用户预警（重度抑郁）</span>
+              <span>⚠️ 高风险情况预警（重度抑郁测评结果）</span>
               <ElTag type="danger">{{ highRiskTotal }} 人</ElTag>
             </div>
           </template>
@@ -256,6 +256,48 @@
               layout="prev, pager, next"
               :total="highRiskTotal"
               @current-change="loadHighRiskUsers"
+            />
+          </div>
+        </ElCard>
+      </ElCol>
+
+      <!-- 模块五：心理健康分预警列表 -->
+      <ElCol :xs="24" :lg="24" style="margin-top: 20px;">
+        <ElCard shadow="never" style="border-left: 4px solid #F56C6C;">
+          <template #header>
+            <div class="card-header">
+              <span>🚨 动态心理健康分低分预警（< 60 分）</span>
+              <ElTag type="danger" effect="dark">{{ lowScoreTotal }} 人</ElTag>
+            </div>
+          </template>
+          <ElTable :data="lowScoreList" border size="small" style="width:100%" v-loading="lowScoreLoading">
+            <ElTableColumn prop="id" label="用户ID" width="80" align="center" />
+            <ElTableColumn prop="username" label="用户名" width="120" align="center" show-overflow-tooltip />
+            <ElTableColumn prop="nickname" label="昵称" width="120" align="center" show-overflow-tooltip />
+            <ElTableColumn prop="healthScore" label="当前健康分" width="120" align="center">
+              <template #default="{ row }">
+                <ElTag :type="getScoreTagType(row.healthScore)" effect="dark">
+                  {{ row.healthScore }} 分
+                </ElTag>
+              </template>
+            </ElTableColumn>
+            <ElTableColumn label="操作" align="center" width="120">
+              <template #default="{ row }">
+                <ElButton link type="primary" size="small" @click="() => goToUserManage(row.id)">
+                  查看详情
+                </ElButton>
+              </template>
+            </ElTableColumn>
+          </ElTable>
+          <div style="display:flex;justify-content:center;margin-top:12px" v-if="lowScoreTotal > 10">
+            <ElPagination
+              size="small"
+              background
+              v-model:current-page="lowScorePage"
+              :page-size="10"
+              layout="prev, pager, next"
+              :total="lowScoreTotal"
+              @current-change="loadLowScoreUsers"
             />
           </div>
         </ElCard>
@@ -317,6 +359,7 @@
 </template>
 
 <script setup lang="ts">
+  import { ref, onMounted, nextTick } from 'vue'
   import { User, UserFilled, Document, ChatDotRound, Message, Refresh } from '@element-plus/icons-vue'
   import { ElMessage } from 'element-plus'
   import { DashboardService, type DashboardStats, type HighRiskRecord } from '@/api/dashboardApi'
@@ -356,7 +399,7 @@
     experiencePosts: 0
   })
 
-  const chatStats = ref({
+  const chatStats = ref<any>({
     totalSessions: 0,
     totalMessages: 0,
     totalTokensUsed: 0,
@@ -364,7 +407,8 @@
     todayMessages: 0
   })
 
-  const recentPosts = ref([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recentPosts = ref<any[]>([])
 
   // 高风险用户
   const highRiskList = ref<HighRiskRecord[]>([])
@@ -372,22 +416,45 @@
   const highRiskPage = ref(1)
   const highRiskLoading = ref(false)
 
-  // 图表容器引用
-  const userChartRef = ref()
-  const postChartRef = ref()
-  const assessmentChartRef = ref()
-  const trendChartRef = ref()
+  // 极低健康分预警用户
+  const lowScoreList = ref<any[]>([])
+  const lowScoreTotal = ref(0)
+  const lowScorePage = ref(1)
+  const lowScoreLoading = ref(false)
 
+  // 图表容器引用
+  const userChartRef = ref<HTMLElement | null>(null)
+  const postChartRef = ref<HTMLElement | null>(null)
+  const assessmentChartRef = ref<HTMLElement | null>(null)
+  const trendChartRef = ref<HTMLElement | null>(null)
   // ECharts 实例引用
   let assessmentChart: echarts.ECharts | null = null
   let trendChart: echarts.ECharts | null = null
+
+  /**
+   * 加载健康分极低用户预警列表
+   */
+  const loadLowScoreUsers = async (page = 1) => {
+    lowScoreLoading.value = true
+    try {
+      const res = await DashboardService.getLowHealthScoreUsers(page, 10)
+      if (res) {
+        lowScoreList.value = res.records || []
+        lowScoreTotal.value = res.total || 0
+      }
+    } catch (error) {
+      console.error('获取健康分预警用户失败')
+    } finally {
+      lowScoreLoading.value = false
+    }
+  }
 
   /**
    * 获取统计数据
    */
   const fetchStats = async () => {
     try {
-      const response = await DashboardService.getDashboardStats()
+      const response: any = await DashboardService.getDashboardStats()
       if (response) {
         dashboardStats.value = response
 
@@ -402,6 +469,7 @@
       }
       await fetchChatStats()
       await loadHighRiskUsers()
+      await loadLowScoreUsers()
     } catch (error) {
       console.error('获取统计数据失败:', error)
       ElMessage.error('获取统计数据失败')
@@ -528,17 +596,20 @@
 
 
   /**
-   * 格式化时间
+   * 跳转到用户管理(如果带id可触发具体操作，此处暂时仅跳页)
    */
-  const formatTime = (time: string) => {
-    return new Date(time).toLocaleString('zh-CN')
+  const goToUserManage = (userId?: number) => {
+    router.push('/user/management')
+    // 可选：利用全局状态或者路由参数将 userId 传递给用户管理页自动展开抽屉
   }
 
   /**
-   * 跳转到用户管理
+   * 根据健康分返回Tag颜色
    */
-  const goToUserManage = () => {
-    router.push('/user/management')
+  const getScoreTagType = (score: number) => {
+    if (score >= 80) return 'success'
+    if (score >= 60) return 'warning'
+    return 'danger'
   }
 
   /**

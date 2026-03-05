@@ -65,4 +65,12 @@ export class AdminUserService {
       url: `/api/admin/users/${userId}`
     })
   }
+
+  // 获取用户健康分变动流水
+  static getUserHealthScoreRecords(userId: number, page = 1, size = 10) {
+    return request.get<any>({
+      url: `/api/admin/users/${userId}/health-score-records`,
+      params: { page, size }
+    })
+  }
 }

@@ -56,5 +56,15 @@ export class DashboardService {
       params: { page, size }
     } as any)
   }
+
+  /**
+   * 获取极低健康分用户预警列表（< 60 分）
+   */
+  static getLowHealthScoreUsers(page = 1, size = 10) {
+    return request.get<PageResult<any>>({
+      url: '/api/admin/dashboard/low-health-score',
+      params: { page, size }
+    } as any)
+  }
 }
 

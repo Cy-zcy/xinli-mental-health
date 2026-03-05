@@ -8,10 +8,13 @@ import com.example.xinli.entity.ChatSession;
 import com.example.xinli.entity.ForumPost;
 import com.example.xinli.entity.User;
 import com.example.xinli.entity.UserAssessmentRecord;
+import com.example.xinli.entity.UserHealthScoreRecord;
 import com.example.xinli.mapper.ChatSessionMapper;
 import com.example.xinli.mapper.ForumPostMapper;
 import com.example.xinli.mapper.ToolRecordMapper;
 import com.example.xinli.mapper.UserAssessmentRecordMapper;
+import com.example.xinli.mapper.UserHealthScoreRecordMapper;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.example.xinli.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +41,9 @@ public class UserController {
 
     @Autowired
     private UserAssessmentRecordMapper assessmentRecordMapper;
+
+    @Autowired
+    private UserHealthScoreRecordMapper healthScoreRecordMapper;
 
     /**
      * 分页查询用户列表
@@ -212,6 +218,27 @@ public class UserController {
         a.put("target", target);
         a.put("progress", progress);
         return a;
+    }
+
+    /**
+     * 管理端 - 查看指定用户的健康分变动流水
+     * GET /api/admin/users/{id}/health-score-records?page=1&size=10
+     */
+    @GetMapping("/{id}/health-score-records")
+    public Result<Page<UserHealthScoreRecord>> getUserHealthScoreRecords(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        try {
+            Page<UserHealthScoreRecord> pageParam = new Page<>(page, size);
+            LambdaQueryWrapper<UserHealthScoreRecord> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(UserHealthScoreRecord::getUserId, id)
+                   .orderByDesc(UserHealthScoreRecord::getCreatedAt);
+            Page<UserHealthScoreRecord> result = healthScoreRecordMapper.selectPage(pageParam, wrapper);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error("获取用户健康分流水失败: " + e.getMessage());
+        }
     }
 }
 
