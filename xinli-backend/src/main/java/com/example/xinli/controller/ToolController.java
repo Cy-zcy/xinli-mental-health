@@ -28,6 +28,9 @@ public class ToolController {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private com.example.xinli.service.UserScoreService userScoreService;
+
     /**
      * 记录工具使用完成情况
      * POST /api/tools/record
@@ -54,6 +57,15 @@ public class ToolController {
             record.setCreatedAt(LocalDateTime.now());
 
             toolRecordMapper.insert(record);
+
+            // ==== 健康分埋点：治愈工具使用加分 ====
+            // 每日最多加2分（前2次有效）
+            if (!userScoreService.isDailyLimitReached(userId, "TOOL", 2)) {
+                String toolName = "breathing".equals(record.getToolType()) ? "呼吸放松" : record.getToolType();
+                userScoreService.changeScore(userId, 1, "使用心理治愈工具奖励: " + toolName, "TOOL");
+            }
+            // ================================
+
             return Result.success();
         } catch (Exception e) {
             return Result.error("记录失败: " + e.getMessage());

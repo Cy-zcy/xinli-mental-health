@@ -37,14 +37,33 @@ public class UserResourceController {
         }
     }
 
+    @Autowired
+    private UserScoreService userScoreService;
+
     /**
-     * 2. 获取资源详情（同时增加浏览次数）
+     * 2. 获取资源详情（同时增加浏览次数，触发健康分奖励）
      * GET /api/resource/{id}
      */
     @GetMapping("/{id}")
-    public Result<InterventionResource> getResourceDetail(@PathVariable Long id) {
+    public Result<InterventionResource> getResourceDetail(
+            @PathVariable Long id,
+            @RequestHeader(value = "Authorization", required = false) String token) {
         try {
-            return Result.success(resourceService.getResourceDetail(id));
+            InterventionResource resource = resourceService.getResourceDetail(id);
+            
+            // ==== 健康分埋点：资源学习加分 ====
+            if (token != null && token.startsWith("Bearer ")) {
+                Long userId = com.example.xinli.utils.AuthUtils.getUserIdFromToken(token.substring(7));
+                if (userId != null) {
+                    // 每日最多加3分（前3次有效）
+                    if (!userScoreService.isDailyLimitReached(userId, "RESOURCE", 3)) {
+                        userScoreService.changeScore(userId, 1, "学习心理干预资源奖励: " + resource.getTitle(), "RESOURCE");
+                    }
+                }
+            }
+            // ================================
+            
+            return Result.success(resource);
         }
         catch (Exception e) {
             return Result.error("获取资源详情失败: " + e.getMessage());

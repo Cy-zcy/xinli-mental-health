@@ -38,6 +38,9 @@ public class AssessmentServiceImpl implements AssessmentService {
     @Autowired
     private UserAssessmentRecordMapper recordMapper;
 
+    @Autowired
+    private UserScoreService userScoreService;
+
     @Override
     public Page<Assessment> getPublishedAssessments(int page, int size) {
         Page<Assessment> pageParam = new Page<>(page, size);
@@ -138,6 +141,13 @@ public class AssessmentServiceImpl implements AssessmentService {
         record.setResultSummary(resultSummary);
         record.setResultDetails(resultDetails);
         recordMapper.insert(record);
+
+        // ==== 健康分埋点：测评完成加分 ====
+        // 每日最多加2分（触发1次）
+        if (!userScoreService.isDailyLimitReached(userId, "ASSESSMENT", 1)) {
+            userScoreService.changeScore(userId, 2, "每日完成心理测评奖励", "ASSESSMENT");
+        }
+        // ================================
 
         // 组装返回 DTO
         AssessmentResultDTO resultDTO = new AssessmentResultDTO();
