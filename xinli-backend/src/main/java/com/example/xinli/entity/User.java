@@ -23,6 +23,8 @@ public class User {
     
     private Integer status; // 1正常 0禁用
     
+    private Integer healthScore; // 用户心理健康安全分(0-100)
+    
     private LocalDateTime createdAt;
     
     private LocalDateTime updatedAt;
