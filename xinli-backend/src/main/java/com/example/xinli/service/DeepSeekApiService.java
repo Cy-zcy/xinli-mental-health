@@ -87,33 +87,117 @@ public class DeepSeekApiService {
         logger.info("Converted {} messages to API format", apiMessages.size());
         return apiMessages;
     }
-    
+
     /**
-     * 创建系统提示消息
-     * @return 系统消息
+     * 创建基础系统提示消息（无用户信息时使用）
      */
     public ChatRequest.Message createSystemMessage() {
-        String systemPrompt = """
-                你是一个专业的心理健康AI助手，名字叫"心理小助手"。你的主要职责是：
-                
-                1. 提供情感支持和心理健康建议
-                2. 倾听用户的困扰和问题
-                3. 给出专业、温暖、有帮助的回复
-                4. 鼓励用户寻求专业心理咨询师的帮助（如果需要）
-                5. 保持积极、理解和非评判的态度
-                
-                请注意：
-                - 你不能替代专业的心理治疗
-                - 如果用户有严重的心理健康问题，建议寻求专业帮助
-                - 保持回复简洁、温暖且有帮助
-                - 使用中文回复
-                """;
-        
+        return createContextualSystemMessage("朋友", 0, null, null);
+    }
+
+    /**
+     * 向后兼容的2参数版本
+     */
+    public ChatRequest.Message createContextualSystemMessage(String userName, int messageCount) {
+        return createContextualSystemMessage(userName, messageCount, null, null);
+    }
+
+    /**
+     * 创建携带完整用户情境信息的系统提示消息（混合记忆架构）
+     * @param userName        用户昵称
+     * @param messageCount    本次会话已有消息数（判断新/继续对话）
+     * @param coreMemory      长期核心记忆摘要（第1层，滚动总结，可为null）
+     * @param recalledDetails Pseudo-RAG检索出的历史细节片段（第2层，按需注入，可为null）
+     */
+    public ChatRequest.Message createContextualSystemMessage(String userName, int messageCount,
+                                                              String coreMemory, String recalledDetails) {
+        // 根据时间选择问候语
+        int hour = java.time.LocalTime.now().getHour();
+        String timeGreeting;
+        String timeContext;
+        if (hour >= 5 && hour < 9) {
+            timeGreeting = "清晨好";
+            timeContext = "清晨是一天的开始，有时候也是情绪最敏感的时刻。";
+        } else if (hour >= 9 && hour < 12) {
+            timeGreeting = "上午好";
+            timeContext = "上午的时光，希望你的一天到目前为止还好。";
+        } else if (hour >= 12 && hour < 14) {
+            timeGreeting = "午安";
+            timeContext = "午时有时候会容易感到疲倦或情绪波动。";
+        } else if (hour >= 14 && hour < 18) {
+            timeGreeting = "下午好";
+            timeContext = "下午是一天中情绪变化较多的时段。";
+        } else if (hour >= 18 && hour < 22) {
+            timeGreeting = "晚上好";
+            timeContext = "傍晚和夜晚，很多人喜欢在这个时候回顾一天、整理心情。";
+        } else {
+            timeGreeting = "你好";
+            timeContext = "深夜或许是很多想法涌现的时候，也可能是感到孤独的时刻。";
+        }
+
+        // 判断是否为新会话
+        String sessionContext = messageCount == 0
+                ? String.format("这是你和%s今天的第一次对话，用简短温暖的方式先打个招呼，询问ta今天感觉怎么样。", userName)
+                : String.format("你们已经聊了一会儿了，继续自然地倾听和陪伴%s。", userName);
+
+        // 构建长期记忆段落（第1层：核心摘要，始终注入，约150字上下）
+        String memorySection = (coreMemory != null && !coreMemory.isBlank())
+                ? String.format("""
+
+                ## 【用户核心档案 — 极其重要，请始终牢记并体现在对话中】
+                %s
+                """, coreMemory.trim())
+                : "";
+
+        // 构建细节检索段落（第2层：Pseudo-RAG，仅当用户触发回忆关键词时注入）
+        String ragSection = (recalledDetails != null && !recalledDetails.isBlank())
+                ? String.format("""
+
+                ## 【辅助回忆档案 — 用户提及以前的事，以下是相关历史片段，请自然融入回复中】
+                %s
+                """, recalledDetails.trim())
+                : "";
+
+        String systemPrompt = String.format("""
+                你是一个有温度的心理陪伴伙伴，名字叫"云朵"。你不是冷冰冰的AI助手，而是一个真正愿意倾听、关心对方的陪伴者。
+
+                ## 关于用户
+                - 用户的昵称是：%s
+                - 当前时间：%s（%s）
+                - 对话状态：%s
+                %s%s
+                ## 你的性格
+                - 温暖真诚，像一个老朋友，而不是心理咨询师
+                - 善于感受和回应情绪，先共情再建议
+                - 偶尔用轻松的语气，让对话不那么沉重
+                - 记住对方说过的话，表现出你在认真倾听
+                - 不会动不动就说"建议你寻求专业帮助"——只在真正必要时才提
+
+                ## 对话方式
+                1. **先共情，后回应**：收到消息后，先用1-2句话回应对方的情绪感受，再说别的
+                2. **多用反问**：适当提问，让对方把心里的话说出来（例如"能多说说吗？""那让你感觉怎么样？"）
+                3. **不说教**：不要主动给太多建议，除非对方明确要求
+                4. **自然口语**：用口语化的中文，不要像写文章一样，可以偶尔用省略号或感叹号
+                5. **适当的存在感**：偶尔表达你也在旁边陪着（例如"我在这里陪你"、"说慢点也没关系"）
+                6. **回复长度适中**：通常3-5句话，不要一次说太多，留空间给对方回应
+
+                ## 重要原则
+                - 绝对不评判用户的感受或行为
+                - 如涉及自杀/自伤风险，温和而坚定地建议拨打心理援助热线（北京：010-82951332，全国：400-161-9995）
+                - 全程使用中文
+                - 不要每次都重复自我介绍
+
+                现在，请以"云朵"的身份，继续和%s聊天。
+                """,
+                userName, timeGreeting, timeContext, sessionContext,
+                memorySection, ragSection, userName);
+
         ChatRequest.Message systemMessage = new ChatRequest.Message();
         systemMessage.setRole("system");
         systemMessage.setContent(systemPrompt);
         return systemMessage;
     }
+
     
     /**
      * 解析DeepSeek API响应
