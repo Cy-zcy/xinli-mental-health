@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
-import { getUserStats, getAchievements } from '@/api/modules/tools'
+import { getUserStats, getAchievements, getToolHistory } from '@/api/modules/tools'
 import type { UserStats, Achievement } from '@/api/modules/tools'
 
 definePage({
@@ -18,6 +18,8 @@ const userStats = ref<UserStats>({ chatSessions: 0, forumPosts: 0, totalLikes: 0
 const achievements = ref<Achievement[]>([])
 const achievementLoading = ref(false)
 const activeTab = ref<'all' | 'earned' | 'progress'>('all')
+
+const recentActivities = ref<{id: number, icon: string, color: string, title: string, time: string}[]>([])
 
 // ===== 计算属性 =====
 const earnedCount = computed(() => achievements.value.filter(a => a.earned).length)
@@ -52,12 +54,25 @@ function logout() {
 async function loadData() {
   achievementLoading.value = true
   try {
-    const [stats, badges] = await Promise.all([
+    const [stats, badges, history] = await Promise.all([
       getUserStats(),
       getAchievements(),
+      getToolHistory()
     ])
     userStats.value = stats
     achievements.value = badges
+    
+    // 映射工具记录为最近活动
+    recentActivities.value = history.map(record => {
+      const isBreathing = record.toolType === 'breathing'
+      return {
+        id: record.id,
+        icon: isBreathing ? 'i-ic:outline-air' : 'i-ic:outline-self-improvement',
+        color: isBreathing ? 'text-blue-500' : 'text-purple-500',
+        title: `完成${record.pattern ? ' ' + record.pattern : (isBreathing ? '呼吸练习' : '冥想')} ${Math.round(record.durationSeconds / 60)}分钟`,
+        time: new Date(record.createdAt).toLocaleString('zh-CN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      }
+    })
   }
   catch (error) {
     console.error('获取数据失败:', error)
@@ -291,6 +306,12 @@ onMounted(loadData)
                   <p class="text-xs text-gray-500 dark:text-gray-400">{{ activity.time }}</p>
                 </div>
               </div>
+            </div>
+
+            <!-- 空状态 -->
+            <div v-if="recentActivities.length === 0 && !achievementLoading" class="text-center py-6 text-gray-400">
+              <FmIcon name="i-ic:outline-inbox" class="text-3xl mb-2 opacity-50" />
+              <p class="text-sm">暂无练习记录，去试试深呼吸放松吧</p>
             </div>
           </div>
         </div>
