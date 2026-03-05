@@ -67,8 +67,8 @@ export function getCategories() {
 }
 
 /**
- * 搜索帖子
- * GET /api/forum/search
+ * 搜索帖子（复用帖子列表接口，传入 keyword 参数）
+ * GET /api/forum/posts?keyword=xxx （后端 /api/forum/search 不存在，由 /api/forum/posts 的 keyword 参数承担搜索功能）
  */
 export function searchPosts(params: {
   keyword: string
@@ -76,7 +76,7 @@ export function searchPosts(params: {
   size?: number
   category?: string
 }) {
-  return api.get<PageResponse<ForumPost>>('/api/forum/search', {
+  return api.get<PageResponse<ForumPost>>('/api/forum/posts', {
     params: {
       page: 1,
       size: 10,

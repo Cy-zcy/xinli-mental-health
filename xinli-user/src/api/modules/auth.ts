@@ -100,8 +100,8 @@ export function uploadAvatar(file: File) {
 
 /**
  * 获取文件URL
- * GET /api/upload/url
+ * GET /api/url  （注意：后端 FileUploadController @RequestMapping("/api")，方法 @GetMapping("/url")，实际路径为 /api/url）
  */
 export function getFileUrl(path: string) {
-  return api.get<string>(`/api/upload/url?path=${encodeURIComponent(path)}`)
+  return api.get<string>(`/api/url?path=${encodeURIComponent(path)}`)
 }

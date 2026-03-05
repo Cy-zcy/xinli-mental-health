@@ -58,7 +58,7 @@ public class UserInfoController {
                     UserInfoDTO userInfo = new UserInfoDTO();
                     userInfo.setId(admin.getId());
                     userInfo.setUsername(admin.getUsername());
-                    userInfo.setName(admin.getName());
+                    userInfo.setNickname(admin.getName()); // 使用 nickname 字段，与前端 UserInfo 类型对齐
                     userInfo.setRole(role);
                     userInfo.setAvatar(""); // 管理员默认头像
                     return Result.success(userInfo);
@@ -70,7 +70,7 @@ public class UserInfoController {
                     UserInfoDTO userInfo = new UserInfoDTO();
                     userInfo.setId(user.getId());
                     userInfo.setUsername(user.getPhone());
-                    userInfo.setName(user.getNickname());
+                    userInfo.setNickname(user.getNickname()); // 使用 nickname 字段，与前端 UserInfo 类型对齐
                     userInfo.setRole("user");
                     userInfo.setAvatar(user.getAvatar());
                     return Result.success(userInfo);
@@ -89,7 +89,7 @@ public class UserInfoController {
     public static class UserInfoDTO {
         private Long id;
         private String username;
-        private String name;
+        private String nickname; // 改为 nickname，与前端 UserInfo 类型对齐
         private String role;
         private String avatar;
         
@@ -110,12 +110,12 @@ public class UserInfoController {
             this.username = username;
         }
         
-        public String getName() {
-            return name;
+        public String getNickname() {
+            return nickname;
         }
         
-        public void setName(String name) {
-            this.name = name;
+        public void setNickname(String nickname) {
+            this.nickname = nickname;
         }
         
         public String getRole() {
