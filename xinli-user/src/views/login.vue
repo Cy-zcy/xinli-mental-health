@@ -91,160 +91,122 @@ function switchMode() {
 }
 </script>
 
-<template>
   <FmPageLayout :navbar="false" copyright>
-    <div class="mx-4 flex flex-1 flex-col justify-center gap-8">
+    <!-- 极简高级光晕背景 -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-slate-50 dark:bg-slate-950">
+      <div class="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] rounded-full bg-blue-400/20 blur-[120px] mix-blend-multiply dark:bg-blue-900/30 dark:mix-blend-screen animate-pulse-slow"></div>
+      <div class="absolute top-[40%] -right-[20%] w-[60%] h-[60%] rounded-full bg-purple-400/20 blur-[120px] mix-blend-multiply dark:bg-purple-900/30 dark:mix-blend-screen animate-pulse-slow" style="animation-delay: 2s"></div>
+    </div>
+
+    <div class="mx-6 flex flex-1 flex-col justify-center gap-10 relative z-10">
       <!-- Logo和标题 -->
-      <div class="text-center">
-        <img src="@/assets/images/logo.png" class="mx-auto h-24 w-24 mb-4">
-        <h1 class="text-2xl font-bold text-primary mb-2">心理健康治愈平台</h1>
-        <p class="text-muted-foreground text-sm">{{ isRegisterMode ? '创建账号，开始您的心理健康之旅' : '欢迎回来，继续您的心理健康之旅' }}</p>
+      <div class="text-center animate-fade-in-down">
+        <div class="mx-auto w-24 h-24 mb-6 rounded-3xl bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl shadow-xl shadow-blue-500/10 flex items-center justify-center border border-white dark:border-slate-700/50">
+          <img src="@/assets/images/logo.png" class="h-16 w-16 object-contain drop-shadow-sm">
+        </div>
+        <h1 class="text-3xl font-black bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent mb-3 tracking-tight">心理健康治愈平台</h1>
+        <p class="text-slate-500 dark:text-slate-400 text-sm font-medium tracking-wide">{{ isRegisterMode ? '创建账号，开启您的内心之旅' : '欢迎回来，继续您的治愈之旅' }}</p>
       </div>
 
       <!-- 登录表单 -->
-      <form v-if="!isRegisterMode" @submit.prevent="onLogin">
-        <div class="mx-4 overflow-hidden border rounded-xl bg-card divide-y">
-          <div class="p-1 space-y-0">
+      <form v-if="!isRegisterMode" @submit.prevent="onLogin" class="animate-fade-in-up">
+        <div class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-2xl shadow-slate-200/40 dark:shadow-none p-2 space-y-2 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+          <div class="bg-white/50 dark:bg-slate-800/50 rounded-2xl p-1 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:shadow-sm">
             <FmInput
               v-model="loginData.phone"
               type="tel"
               placeholder="手机号"
-              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-12 text-[15px]"
             />
           </div>
-          <div class="p-1 space-y-0">
+          <div class="bg-white/50 dark:bg-slate-800/50 rounded-2xl p-1 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:shadow-sm">
             <FmInput
               v-model="loginData.password"
               type="password"
               placeholder="密码"
-              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-12 text-[15px]"
             />
           </div>
         </div>
-        <div class="mt-8 px-4">
-          <FmButton :loading class="w-full" type="submit">
-            登录
+        
+        <div class="mt-8 px-2">
+          <FmButton :loading class="w-full h-14 rounded-2xl text-[16px] font-bold shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 transition-transform active:scale-[0.98]" type="submit">
+            登 录
           </FmButton>
-          <div class="mt-4 text-center">
-            <FmButton variant="ghost" size="sm" @click="switchMode">
-              还没有账号？立即注册
+          <div class="mt-6 text-center">
+            <FmButton variant="ghost" size="sm" class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 tracking-wide font-medium rounded-full px-6" @click="switchMode">
+              还没有账号？<span class="text-indigo-500 font-bold ml-1">立即注册</span>
             </FmButton>
           </div>
         </div>
       </form>
 
       <!-- 注册表单 -->
-      <form v-else @submit.prevent="onRegister">
-        <div class="mx-4 overflow-hidden border rounded-xl bg-card divide-y">
-          <div class="p-1 space-y-0">
+      <form v-else @submit.prevent="onRegister" class="animate-fade-in-up">
+        <div class="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-2xl shadow-slate-200/40 dark:shadow-none p-2 space-y-2 relative overflow-hidden">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+          <div class="bg-white/50 dark:bg-slate-800/50 rounded-2xl p-1 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:shadow-sm">
             <FmInput
               v-model="registerData.phone"
               type="tel"
               placeholder="手机号"
-              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-12 text-[15px]"
             />
           </div>
-          <div class="p-1 space-y-0">
+          <div class="bg-white/50 dark:bg-slate-800/50 rounded-2xl p-1 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:shadow-sm">
             <FmInput
               v-model="registerData.nickname"
               type="text"
               placeholder="昵称"
-              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-12 text-[15px]"
             />
           </div>
-          <div class="p-1 space-y-0">
+          <div class="bg-white/50 dark:bg-slate-800/50 rounded-2xl p-1 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:shadow-sm">
             <FmInput
               v-model="registerData.password"
               type="password"
               placeholder="密码（至少6位）"
-              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-12 text-[15px]"
             />
           </div>
-          <div class="p-1 space-y-0">
+          <div class="bg-white/50 dark:bg-slate-800/50 rounded-2xl p-1 transition-colors focus-within:bg-white dark:focus-within:bg-slate-800 focus-within:shadow-sm">
             <FmInput
               v-model="registerData.confirmPassword"
               type="password"
               placeholder="确认密码"
-              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              class="w-full border-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent h-12 text-[15px]"
             />
           </div>
         </div>
-        <div class="mt-8 px-4">
-          <FmButton :loading class="w-full" type="submit">
-            注册
+        <div class="mt-8 px-2">
+          <FmButton :loading class="w-full h-14 rounded-2xl text-[16px] font-bold shadow-lg shadow-indigo-500/25 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 transition-transform active:scale-[0.98]" type="submit">
+            注 册
           </FmButton>
-          <div class="mt-4 text-center">
-            <FmButton variant="ghost" size="sm" @click="switchMode">
-              已有账号？立即登录
+          <div class="mt-6 text-center">
+            <FmButton variant="ghost" size="sm" class="text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 tracking-wide font-medium rounded-full px-6" @click="switchMode">
+              已有账号？<span class="text-indigo-500 font-bold ml-1">立即登录</span>
             </FmButton>
           </div>
         </div>
       </form>
     </div>
-    <svg width="100%" viewBox="0 0 1440 590" xmlns="http://www.w3.org/2000/svg" class="svg pointer-events-none transition duration-300 delay-150 ease-in-out"><defs><linearGradient id="gradient" x1="0%" y1="50%" x2="100%" y2="50%"><stop offset="5%" stop-color="#F78DA7" /><stop offset="95%" stop-color="#8ED1FC" /></linearGradient></defs><path d="M 0,600 L 0,150 C 154.10714285714283,165.39285714285714 308.21428571428567,180.78571428571428 424,163 C 539.7857142857143,145.21428571428572 617.2500000000001,94.25 735,94 C 852.7499999999999,93.75 1010.7857142857142,144.21428571428572 1135,162 C 1259.2142857142858,179.78571428571428 1349.607142857143,164.89285714285714 1440,150 L 1440,600 L 0,600 Z" stroke="none" stroke-width="0" fill="url(#gradient)" fill-opacity="0.53" class="path-1 transition-all duration-300 delay-150 ease-in-out" /><defs><linearGradient id="gradient" x1="0%" y1="50%" x2="100%" y2="50%"><stop offset="5%" stop-color="#F78DA7" /><stop offset="95%" stop-color="#8ED1FC" /></linearGradient></defs><path d="M 0,600 L 0,350 C 144.10714285714286,333.7857142857143 288.2142857142857,317.57142857142856 389,313 C 489.7857142857143,308.42857142857144 547.25,315.5 657,321 C 766.75,326.5 928.7857142857142,330.42857142857144 1068,335 C 1207.2142857142858,339.57142857142856 1323.607142857143,344.7857142857143 1440,350 L 1440,600 L 0,600 Z" stroke="none" stroke-width="0" fill="url(#gradient)" fill-opacity="1" class="path-2 transition-all duration-300 delay-150 ease-in-out" /></svg>
   </FmPageLayout>
 </template>
 
 <style scoped>
-.svg {
-  position: absolute;
-  bottom: 0;
-  z-index: 0;
+.animate-pulse-slow {
+  animation: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-.path-1 {
-  animation: path-anim-1 4s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-@keyframes path-anim-1 {
-  0% {
-    d: path("M 0,600 L 0,150 C 154.10714285714283,165.39285714285714 308.21428571428567,180.78571428571428 424,163 C 539.7857142857143,145.21428571428572 617.2500000000001,94.25 735,94 C 852.7499999999999,93.75 1010.7857142857142,144.21428571428572 1135,162 C 1259.2142857142858,179.78571428571428 1349.607142857143,164.89285714285714 1440,150 L 1440,600 L 0,600 Z");
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
   }
-
-  25% {
-    d: path("M 0,600 L 0,150 C 93.35714285714286,124.89285714285714 186.71428571428572,99.78571428571429 297,90 C 407.2857142857143,80.21428571428571 534.5,85.75 658,114 C 781.5,142.25 901.2857142857142,193.21428571428572 1031,203 C 1160.7142857142858,212.78571428571428 1300.357142857143,181.39285714285714 1440,150 L 1440,600 L 0,600 Z");
-  }
-
   50% {
-    d: path("M 0,600 L 0,150 C 86.85714285714286,184.78571428571428 173.71428571428572,219.57142857142858 306,199 C 438.2857142857143,178.42857142857142 616,102.49999999999999 753,78 C 890,53.500000000000014 986.2857142857142,80.42857142857143 1094,101 C 1201.7142857142858,121.57142857142857 1320.857142857143,135.78571428571428 1440,150 L 1440,600 L 0,600 Z");
-  }
-
-  75% {
-    d: path("M 0,600 L 0,150 C 106.82142857142858,152.5 213.64285714285717,155 325,144 C 436.35714285714283,133 552.2499999999999,108.49999999999999 694,108 C 835.7500000000001,107.50000000000001 1003.3571428571429,131.00000000000003 1132,142 C 1260.642857142857,152.99999999999997 1350.3214285714284,151.5 1440,150 L 1440,600 L 0,600 Z");
-  }
-
-  100% {
-    d: path("M 0,600 L 0,150 C 154.10714285714283,165.39285714285714 308.21428571428567,180.78571428571428 424,163 C 539.7857142857143,145.21428571428572 617.2500000000001,94.25 735,94 C 852.7499999999999,93.75 1010.7857142857142,144.21428571428572 1135,162 C 1259.2142857142858,179.78571428571428 1349.607142857143,164.89285714285714 1440,150 L 1440,600 L 0,600 Z");
-  }
-}
-
-.path-2 {
-  animation: path-anim-2 4s;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-}
-
-@keyframes path-anim-2 {
-  0% {
-    d: path("M 0,600 L 0,350 C 144.10714285714286,333.7857142857143 288.2142857142857,317.57142857142856 389,313 C 489.7857142857143,308.42857142857144 547.25,315.5 657,321 C 766.75,326.5 928.7857142857142,330.42857142857144 1068,335 C 1207.2142857142858,339.57142857142856 1323.607142857143,344.7857142857143 1440,350 L 1440,600 L 0,600 Z");
-  }
-
-  25% {
-    d: path("M 0,600 L 0,350 C 111.64285714285711,384.82142857142856 223.28571428571422,419.64285714285717 356,421 C 488.7142857142858,422.35714285714283 642.5000000000002,390.25 752,390 C 861.4999999999998,389.75 926.7142857142856,421.35714285714283 1034,420 C 1141.2857142857144,418.64285714285717 1290.6428571428573,384.32142857142856 1440,350 L 1440,600 L 0,600 Z");
-  }
-
-  50% {
-    d: path("M 0,600 L 0,350 C 139.60714285714283,359.3571428571429 279.21428571428567,368.7142857142857 402,374 C 524.7857142857143,379.2857142857143 630.7500000000001,380.5 740,371 C 849.2499999999999,361.5 961.7857142857142,341.2857142857143 1079,336 C 1196.2142857142858,330.7142857142857 1318.107142857143,340.3571428571429 1440,350 L 1440,600 L 0,600 Z");
-  }
-
-  75% {
-    d: path("M 0,600 L 0,350 C 136.53571428571428,364.5357142857143 273.07142857142856,379.07142857142856 370,362 C 466.92857142857144,344.92857142857144 524.2500000000001,296.25 654,282 C 783.7499999999999,267.75 985.9285714285716,287.92857142857144 1129,305 C 1272.0714285714284,322.07142857142856 1356.0357142857142,336.0357142857143 1440,350 L 1440,600 L 0,600 Z");
-  }
-
-  100% {
-    d: path("M 0,600 L 0,350 C 144.10714285714286,333.7857142857143 288.2142857142857,317.57142857142856 389,313 C 489.7857142857143,308.42857142857144 547.25,315.5 657,321 C 766.75,326.5 928.7857142857142,330.42857142857144 1068,335 C 1207.2142857142858,339.57142857142856 1323.607142857143,344.7857142857143 1440,350 L 1440,600 L 0,600 Z");
+    opacity: .7;
+    transform: scale(1.05);
   }
 }
 </style>

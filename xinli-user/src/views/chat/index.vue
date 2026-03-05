@@ -265,48 +265,63 @@ onMounted(() => {
 
 <template>
   <FmPageLayout :navbar="false" tabbar>
-    <div class="flex flex-1 flex-col h-full">
+    <!-- 整体背景改用更柔和的渐变底色，搭配暗模式适配 -->
+    <div class="flex flex-1 flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 relative">
+      <!-- 增加背景光晕效果 (Orb) -->
+      <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] rounded-full bg-blue-400/10 blur-[80px] mix-blend-multiply dark:bg-blue-900/20 dark:mix-blend-screen"></div>
+        <div class="absolute top-[20%] -right-[10%] w-[30%] h-[50%] rounded-full bg-purple-400/10 blur-[80px] mix-blend-multiply dark:bg-purple-900/20 dark:mix-blend-screen"></div>
+      </div>
+
       <!-- 头部 -->
-      <div class="flex items-center justify-between p-4 border-b bg-card">
-        <h1 class="text-lg font-semibold">AI心理聊天</h1>
+      <div class="flex items-center justify-between px-5 py-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 z-10 sticky top-0 shadow-sm">
+        <h1 class="text-xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent tracking-tight">AI 心理咨询</h1>
         <div class="flex items-center gap-2">
           <FmButton 
-            variant="outline" 
+            variant="secondary" 
             size="sm" 
+            class="rounded-full shadow-sm bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-700 backdrop-blur-sm border-0 transition-all active:scale-95"
             @click="router.push('/chat/history')"
           >
+            <FmIcon name="i-carbon:time" class="mr-1" />
             历史记录
           </FmButton>
         </div>
       </div>
 
       <!-- 聊天区域 -->
-      <div class="flex flex-1 overflow-hidden">
-        <!-- 会话列表 -->
-        <div class="w-1/3 border-r bg-card overflow-y-auto">
-          <div class="p-3">
+      <div class="flex flex-1 overflow-hidden z-10 mx-2 mb-2 mt-2 gap-2">
+        <!-- 会话列表 (左侧抽屉/列表) -->
+        <div class="w-1/3 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl border border-white/50 dark:border-slate-700/50 shadow-sm flex flex-col">
+          <div class="p-3 border-b border-slate-100 dark:border-slate-800/50">
             <FmButton 
-              class="w-full" 
+              class="w-full rounded-xl shadow-sm bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-600 hover:to-indigo-600 text-white font-medium border-0 transition-transform active:scale-95" 
               size="sm" 
               @click="createNewSession"
               :loading="sending"
             >
-              新建对话
+              <FmIcon name="i-carbon:add-alt" class="mr-1" />
+              新对话
             </FmButton>
           </div>
           
-          <div class="space-y-1 p-2">
+          <div class="flex-1 overflow-y-auto p-2 space-y-1.5 scrollbar-hide">
             <div 
               v-for="session in sessions" 
               :key="session.id"
-              class="p-3 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              :class="{ 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800': currentSession?.id === session.id }"
+              class="p-3 rounded-xl cursor-pointer transition-all duration-200"
+              :class="[
+                currentSession?.id === session.id 
+                  ? 'bg-blue-50/80 dark:bg-blue-900/30 border border-blue-200/60 dark:border-blue-800/50 shadow-[0_2px_8px_rgba(59,130,246,0.08)]' 
+                  : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/50 border border-transparent'
+              ]"
               @click="selectSession(session)"
             >
-              <div class="font-medium text-sm truncate">
+              <div class="font-medium text-[13px] truncate text-slate-800 dark:text-slate-200 leading-tight">
                 {{ session.title }}
               </div>
-              <div class="text-xs text-gray-500 mt-1">
+              <div class="text-[11px] text-slate-400 dark:text-slate-500 mt-1.5 flex items-center gap-1 opacity-80">
+                <FmIcon name="i-carbon:time" class="text-[10px]" />
                 {{ formatTime(session.updatedAt) }}
               </div>
             </div>
@@ -314,33 +329,37 @@ onMounted(() => {
         </div>
 
         <!-- 聊天内容 -->
-        <div class="flex-1 flex flex-col">
+        <div class="flex-1 flex flex-col bg-white/40 dark:bg-slate-900/40 backdrop-blur-md rounded-2xl border border-white/50 dark:border-slate-700/50 shadow-sm overflow-hidden relative">
           <!-- 消息列表 -->
           <div 
             ref="messagesContainer"
-            class="flex-1 overflow-y-auto p-4 space-y-4"
+            class="flex-1 overflow-y-auto p-5 space-y-6 scroll-smooth"
           >
-            <div v-if="!currentSession" class="flex items-center justify-center h-full text-gray-500">
-              <div class="text-center">
-                <FmIcon name="i-carbon:chat" class="text-12 mb-4" />
-                <p>选择一个对话或开始新的对话</p>
+            <div v-if="!currentSession" class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">
+              <div class="text-center transition-all">
+                <div class="w-20 h-20 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center mb-4 shadow-inner">
+                  <FmIcon name="i-carbon:chat" class="text-3xl opacity-50" />
+                </div>
+                <p class="font-medium">选择一个对话或开始新的对话</p>
               </div>
             </div>
             
-            <div v-else-if="messages.length === 0" class="flex items-center justify-center h-full text-gray-500">
-              <div class="text-center">
-                <FmIcon name="i-carbon:chat-bot" class="text-12 mb-4" />
-                <p>开始与AI心理助手对话吧</p>
-                <p class="text-sm mt-2">我会倾听您的心声，提供专业的心理支持</p>
+            <div v-else-if="messages.length === 0" class="flex items-center justify-center h-full text-slate-400 dark:text-slate-500">
+              <div class="text-center animate-fade-in-up">
+                <div class="w-20 h-20 mx-auto rounded-full bg-gradient-to-tr from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 flex items-center justify-center mb-4 shadow-inner border border-white/50 dark:border-slate-700/30">
+                  <FmIcon name="i-carbon:chat-bot" class="text-3xl text-indigo-400 dark:text-indigo-300" />
+                </div>
+                <p class="font-medium text-slate-600 dark:text-slate-300 mb-2">开始与AI心理助手对话吧</p>
+                <p class="text-xs opacity-70">我会倾听您的心声，提供专业的心理支持</p>
               </div>
             </div>
 
-            <div v-for="message in messages" :key="message.id" class="flex gap-3">
+            <div v-for="message in messages" :key="message.id" class="flex gap-4 animate-fade-in">
               <!-- 用户消息 -->
               <div v-if="message.role === 'user'" class="flex justify-end w-full">
-                <div class="max-w-[70%] bg-blue-500 text-white rounded-lg p-3">
-                  <p class="whitespace-pre-wrap">{{ message.content }}</p>
-                  <div class="text-xs opacity-70 mt-1">
+                <div class="max-w-[75%] bg-gradient-to-br from-blue-500 to-indigo-500 font-medium text-white rounded-2xl p-4 shadow-md shadow-blue-500/20 rounded-tr-sm">
+                  <p class="whitespace-pre-wrap leading-relaxed text-[14px]">{{ message.content }}</p>
+                  <div class="text-[11px] text-blue-100 mt-2 flex justify-end opacity-80 font-normal">
                     {{ formatTime(message.createdAt) }}
                   </div>
                 </div>
@@ -348,16 +367,18 @@ onMounted(() => {
               
               <!-- AI消息 -->
               <div v-else class="flex w-full">
-                <div class="flex gap-3 max-w-[70%]">
-                  <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center flex-shrink-0">
-                    <FmIcon name="i-carbon:chat-bot" class="text-4 text-white" />
+                <div class="flex gap-3 max-w-[85%]">
+                  <div class="w-9 h-9 rounded-[10px] bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/30 border border-white/20 dark:border-slate-700">
+                    <FmIcon name="i-carbon:chat-bot" class="text-lg text-white" />
                   </div>
-                  <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                    <p class="whitespace-pre-wrap">{{ message.content }}</p>
-                    <div class="text-xs text-gray-500 mt-1">
+                  <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700/50 rounded-tl-[4px]">
+                    <p class="whitespace-pre-wrap leading-relaxed text-[14px] text-slate-800 dark:text-slate-200">{{ message.content }}</p>
+                    <div class="text-[11px] text-slate-400 dark:text-slate-500 mt-2 flex items-center font-normal">
                       {{ formatTime(message.createdAt) }}
-                      <span v-if="message.tokensUsed" class="ml-2">
-                        · {{ message.tokensUsed }} tokens
+                      <span v-if="message.tokensUsed" class="ml-2 flex items-center">
+                        <span class="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 mx-1.5"></span>
+                        <FmIcon name="i-carbon:data-1" class="mr-1 text-[10px]" />
+                        <span class="opacity-80">{{ message.tokensUsed }} Tokens</span>
                       </span>
                     </div>
                   </div>
@@ -366,59 +387,64 @@ onMounted(() => {
             </div>
             
             <!-- 相关资源推荐卡片 -->
-            <div v-if="showRecommendations && recommendedResources.length > 0" class="w-full mt-2">
-              <div class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-4 border border-indigo-100 dark:border-gray-700 shadow-sm">
-                <div class="flex items-center justify-between mb-3">
-                  <h4 class="text-sm font-semibold text-indigo-700 dark:text-indigo-300 flex items-center gap-1">
-                    <FmIcon name="i-ic:outline-library-books" class="text-base" />
-                    相关心理资源推荐
+            <div v-if="showRecommendations && recommendedResources.length > 0" class="w-full mt-4 flex justify-end animate-fade-in-up">
+              <div class="max-w-[85%] bg-white/80 dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-5 border border-indigo-100/50 dark:border-indigo-900/30 shadow-sm shadow-indigo-500/5 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                <div class="flex items-center justify-between mb-4 relative z-10">
+                  <h4 class="text-sm font-bold text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5 tracking-tight">
+                    <FmIcon name="i-ic:outline-library-books" class="text-indigo-500" />
+                    为您推荐的相关资源
                   </h4>
                   <button
-                    class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-2 py-0.5 rounded-full hover:bg-white/50 transition-colors"
+                    class="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 px-2 py-1 rounded-full hover:bg-slate-100/50 dark:hover:bg-slate-700/50 transition-colors"
                     @click="dismissRecommendations"
-                  >✕ 关闭</button>
+                  >关闭</button>
                 </div>
-                <div class="space-y-2">
+                <div class="space-y-2.5 relative z-10">
                   <div
                     v-for="item in recommendedResources"
                     :key="item.id"
-                    class="flex items-center gap-3 bg-white dark:bg-gray-800 rounded-xl p-3 cursor-pointer hover:shadow-md transition-all active:scale-98"
+                    class="group flex items-center gap-3 bg-white/90 dark:bg-slate-900/90 rounded-xl p-3 cursor-pointer hover:shadow-md hover:shadow-indigo-500/10 border border-slate-100 dark:border-slate-700/50 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all duration-300 active:scale-[0.98]"
                     @click="router.push(`/resource/${item.id}`)"
                   >
-                    <div :class="`flex-shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br ${resourceTypeColor(item.type)} flex items-center justify-center`">
+                    <div :class="`flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br ${resourceTypeColor(item.type)} flex items-center justify-center shadow-sm`">
                       <FmIcon :name="resourceIcon(item.type)" class="text-white text-lg" />
                     </div>
                     <div class="flex-1 min-w-0">
-                      <div class="text-sm font-medium text-gray-800 dark:text-white truncate">{{ item.title }}</div>
-                      <div class="text-xs text-gray-400 mt-0.5 flex items-center gap-1">
-                        <span class="px-1.5 py-0.5 rounded-md bg-gray-100 dark:bg-gray-700">{{ resourceTypeLabel(item.type) }}</span>
-                        <span v-if="item.description" class="truncate">{{ item.description }}</span>
+                      <div class="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{{ item.title }}</div>
+                      <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                        <span class="px-1.5 py-0.5 rounded-[4px] bg-slate-100 dark:bg-slate-800 font-medium">{{ resourceTypeLabel(item.type) }}</span>
+                        <span v-if="item.description" class="truncate opacity-80">{{ item.description }}</span>
                       </div>
                     </div>
-                    <FmIcon name="i-ic:outline-chevron-right" class="text-gray-400 flex-shrink-0" />
+                    <div class="w-6 h-6 rounded-full bg-slate-50 dark:bg-slate-800 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity -translate-x-2 group-hover:translate-x-0 group-hover:duration-300">
+                      <FmIcon name="i-ic:outline-chevron-right" class="text-indigo-500 text-sm" />
+                    </div>
                   </div>
                 </div>
-                <div class="mt-3 text-center">
+                <div class="mt-4 text-center relative z-10">
                   <button
-                    class="text-xs text-indigo-500 hover:text-indigo-700 dark:text-indigo-400 font-medium"
+                    class="text-[12px] text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 font-medium tracking-wide flex items-center justify-center mx-auto hover:bg-indigo-50 dark:hover:bg-indigo-900/30 px-3 py-1.5 rounded-full transition-colors"
                     @click="router.push('/resource')"
-                  >查看更多资源 →</button>
+                  >
+                    查看更多资源
+                    <FmIcon name="i-carbon:arrow-right" class="ml-1" />
+                  </button>
                 </div>
               </div>
             </div>
 
-            <!-- 发送中提示 -->
-            <div v-if="sending" class="flex w-full">
-              <div class="flex gap-3 max-w-[70%]">
-                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center flex-shrink-0">
-                  <FmIcon name="i-carbon:chat-bot" class="text-4 text-white" />
+            <!-- AI 发送中提示 -->
+            <div v-if="sending" class="flex w-full animate-fade-in">
+              <div class="flex gap-3 max-w-[85%] mb-4">
+                <div class="w-9 h-9 rounded-[10px] bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 shadow-sm shadow-indigo-500/30 border border-white/20 dark:border-slate-700">
+                  <FmIcon name="i-carbon:chat-bot" class="text-lg text-white" />
                 </div>
-                <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-3">
-                  <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
-                    <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                    <span class="text-sm text-gray-500 ml-2">AI正在思考...</span>
+                <div class="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-700/50 rounded-tl-[4px] min-w-[100px] flex items-center h-11">
+                  <div class="flex items-center gap-1.5 h-full">
+                    <div class="w-1.5 h-1.5 bg-indigo-400/80 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]"></div>
+                    <div class="w-1.5 h-1.5 bg-indigo-400/80 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" style="animation-delay: 0.16s"></div>
+                    <div class="w-1.5 h-1.5 bg-indigo-400/80 rounded-full animate-[bounce_1.4s_infinite_ease-in-out_both]" style="animation-delay: 0.32s"></div>
                   </div>
                 </div>
               </div>
@@ -426,25 +452,33 @@ onMounted(() => {
           </div>
 
           <!-- 输入区域 -->
-          <div class="border-t p-4">
-            <div class="flex gap-3">
-              <FmInput
-                v-model="inputMessage"
-                placeholder="输入您想说的话..."
-                class="flex-1"
-                :disabled="sending"
-                @keydown="handleKeydown"
-              />
+          <div class="p-4 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-t border-slate-100 dark:border-slate-800/50 relative z-10">
+            <div class="flex gap-3 items-end max-w-4xl mx-auto w-full">
+              <div class="flex-1 bg-white/80 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-inner focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400/50 transition-all overflow-hidden relative group">
+                <textarea
+                  v-model="inputMessage"
+                  placeholder="说点什么吧..."
+                  class="w-full bg-transparent border-0 px-4 py-3.5 text-[14px] text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none resize-none min-h-[52px] max-h-[150px] scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-600 block"
+                  :disabled="sending"
+                  @keydown="handleKeydown"
+                  rows="1"
+                  style="field-sizing: content;"
+                ></textarea>
+              </div>
               <FmButton 
+                class="rounded-xl h-[52px] px-6 shadow-md shadow-indigo-500/20 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white font-medium border-0 transition-transform active:scale-95 flex-shrink-0"
                 @click="sendMessage" 
                 :loading="sending"
                 :disabled="!inputMessage.trim()"
               >
-                发送
+                <div class="flex items-center font-bold">
+                  {{ sending ? '' : '发送' }}
+                  <FmIcon v-if="!sending" name="i-carbon:send-alt" class="ml-1.5 text-lg" />
+                </div>
               </FmButton>
             </div>
-            <div class="text-xs text-gray-500 mt-2 text-center">
-              按 Enter 发送，Shift + Enter 换行
+            <div class="text-[11px] text-slate-400 dark:text-slate-500 mt-2.5 text-center font-medium opacity-70">
+              按 <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-sans text-[10px]">Enter</kbd> 发送，<kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700 font-sans text-[10px]">Shift + Enter</kbd> 换行
             </div>
           </div>
         </div>

@@ -120,17 +120,23 @@ onMounted(() => {
 
 <template>
   <FmPageLayout title="聊天历史" :navbar="{ back: true }" @back="goBack">
-    <div class="flex flex-1 flex-col">
+    <!-- 整体背景改用更柔和的渐变底色 -->
+    <div class="flex flex-1 flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 relative">
+      <!-- 增加背景光晕效果 (Orb) -->
+      <div class="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none z-0">
+        <div class="absolute -top-[10%] -right-[10%] w-[50%] h-[50%] rounded-full bg-indigo-400/10 blur-[80px] mix-blend-multiply dark:bg-indigo-900/20 dark:mix-blend-screen"></div>
+      </div>
+
       <!-- 统计信息 -->
-      <div class="p-4 bg-card border-b">
-        <div class="text-center">
-          <div class="text-2xl font-bold text-blue-500">{{ total }}</div>
-          <div class="text-sm text-gray-500">总对话次数</div>
+      <div class="px-5 py-6 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-800/50 relative z-10 shadow-[0_4px_20px_-10px_rgba(0,0,0,0.05)]">
+        <div class="text-center flex flex-col items-center justify-center space-y-1">
+          <div class="text-4xl font-black bg-gradient-to-br from-indigo-500 to-purple-500 bg-clip-text text-transparent">{{ total }}</div>
+          <div class="text-[13px] font-medium text-slate-500 dark:text-slate-400 tracking-wide uppercase">总对话次数</div>
         </div>
       </div>
 
       <!-- 会话列表 -->
-      <div class="flex-1 overflow-y-auto">
+      <div class="flex-1 overflow-y-auto relative z-10">
         <FmLoading v-if="loading && sessions.length === 0" type="wave" text="加载中..." />
 
         <div v-else-if="sessions.length === 0" class="flex items-center justify-center h-64">
@@ -143,43 +149,52 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-else class="space-y-2 p-4">
+        <div v-else class="space-y-4 p-5">
           <div 
             v-for="(session, index) in sessions" 
             :key="session.id"
-            class="bg-card rounded-lg p-4 border hover:shadow-md transition-shadow"
+            class="group bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl p-5 border border-slate-200/60 dark:border-slate-700/60 hover:border-indigo-300/50 dark:hover:border-indigo-700/50 shadow-sm shadow-slate-200/20 dark:shadow-none hover:shadow-md hover:shadow-indigo-500/10 transition-all duration-300 relative overflow-hidden"
           >
-            <div class="flex items-start justify-between">
+            <!-- 装饰侧边条 -->
+            <div class="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-400 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            
+            <div class="flex items-start justify-between gap-4">
               <div class="flex-1 min-w-0">
-                <h3 class="font-medium text-gray-900 dark:text-gray-100 truncate">
+                <h3 class="font-bold text-slate-800 dark:text-slate-200 text-base truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                   {{ session.title }}
                 </h3>
-                <div class="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                  <span>{{ formatRelativeTime(session.updatedAt) }}</span>
-                  <span>{{ formatTime(session.createdAt) }}</span>
+                <div class="flex items-center gap-4 mt-3 text-[12px] font-medium text-slate-400 dark:text-slate-500">
+                  <span class="flex items-center gap-1 bg-slate-100 dark:bg-slate-700/50 px-2 py-0.5 rounded-md">
+                    <FmIcon name="i-carbon:time" class="text-[10px]" />
+                    {{ formatRelativeTime(session.updatedAt) }}
+                  </span>
+                  <span class="opacity-70">{{ formatTime(session.createdAt) }}</span>
                 </div>
               </div>
               
-              <div class="flex items-center gap-2 ml-4">
+              <div class="flex items-center gap-2">
                 <FmButton 
-                  variant="outline" 
+                  variant="secondary" 
                   size="sm"
+                  class="rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 dark:text-indigo-300 border-0 shadow-sm transition-all"
                   @click="viewSession(session)"
                 >
                   查看
                 </FmButton>
                 <FmButton 
                   size="sm"
+                  class="rounded-xl bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 shadow-sm shadow-indigo-500/20 transition-all"
                   @click="continueChat(session)"
                 >
                   继续
                 </FmButton>
                 <FmButton 
-                  variant="outline" 
+                  variant="ghost" 
                   size="sm"
+                  class="rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 ml-1 transition-colors px-2"
                   @click="deleteSession(session, index)"
                 >
-                  <FmIcon name="i-carbon:trash-can" class="text-4" />
+                  <FmIcon name="i-carbon:trash-can" class="text-lg" />
                 </FmButton>
               </div>
             </div>
