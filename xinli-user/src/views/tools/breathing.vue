@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import { recordToolUsage } from '@/api/modules/tools'
 
 definePage({
   meta: {
@@ -181,7 +182,7 @@ function switchToNextPhase() {
 }
 
 // 完成练习
-function completeSession() {
+async function completeSession() {
   isActive.value = false
   if (timer.value) {
     clearTimeout(timer.value)
@@ -192,8 +193,21 @@ function completeSession() {
     description: `完成了 ${totalCycles.value} 个呼吸循环`,
   })
 
-  // 这里可以记录练习数据
-  // recordBreathingSession()
+  // 向后端记录本次练习
+  const totalSecs = totalCycles.value
+    * (selectedPattern.value.inhale + selectedPattern.value.hold + selectedPattern.value.exhale + selectedPattern.value.pause)
+  try {
+    await recordToolUsage({
+      toolType: 'breathing',
+      durationSeconds: totalSecs,
+      cycles: totalCycles.value,
+      completed: true,
+      pattern: selectedPattern.value.name,
+    })
+  }
+  catch {
+    // 记录失败不影响用户体验，静默处理
+  }
 }
 
 // 选择呼吸模式

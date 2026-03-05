@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import { getUserStats } from '@/api/modules/tools'
+import type { UserStats } from '@/api/modules/tools'
 
 definePage({
   meta: {
@@ -14,6 +16,14 @@ const userStore = useUserStore()
 const avatarError = ref(false)
 const loading = ref(false)
 
+// 用户统计数据
+const userStats = ref<UserStats>({
+  chatSessions: 0,
+  forumPosts: 0,
+  totalLikes: 0,
+  toolMinutes: 0,
+})
+
 // 监听头像变化
 watch(() => userStore.avatar, () => {
   if (avatarError.value) {
@@ -21,14 +31,23 @@ watch(() => userStore.avatar, () => {
   }
 })
 
-// 获取用户信息
+// 获取用户信息 & 统计数据
 onMounted(async () => {
   if (userStore.isLogin && !userStore.userInfo) {
     try {
       await userStore.getUserInfo()
-    } catch (error) {
+    }
+    catch (error) {
       console.error('获取用户信息失败:', error)
     }
+  }
+
+  // 获取真实统计数据
+  try {
+    userStats.value = await getUserStats()
+  }
+  catch {
+    // 未登录或请求失败时保持默认 0
   }
 })
 
@@ -53,9 +72,11 @@ async function handleLogout() {
   try {
     await userStore.logout()
     toast.success('已退出登录')
-  } catch (error) {
+  }
+  catch (error) {
     console.error('退出登录失败:', error)
-  } finally {
+  }
+  finally {
     loading.value = false
   }
 }
@@ -98,15 +119,15 @@ async function handleLogout() {
         <!-- 数据统计 -->
         <div class="grid grid-cols-3 gap-4 mt-4">
           <div class="flex flex-col items-center p-4 rounded-lg bg-card">
-            <div class="text-2xl font-bold text-blue-500">0</div>
+            <div class="text-2xl font-bold text-blue-500">{{ userStats.chatSessions }}</div>
             <div class="text-xs text-gray-500 mt-1">AI对话次数</div>
           </div>
           <div class="flex flex-col items-center p-4 rounded-lg bg-card">
-            <div class="text-2xl font-bold text-green-500">0</div>
+            <div class="text-2xl font-bold text-green-500">{{ userStats.forumPosts }}</div>
             <div class="text-xs text-gray-500 mt-1">发布帖子</div>
           </div>
           <div class="flex flex-col items-center p-4 rounded-lg bg-card">
-            <div class="text-2xl font-bold text-purple-500">0</div>
+            <div class="text-2xl font-bold text-purple-500">{{ userStats.totalLikes }}</div>
             <div class="text-xs text-gray-500 mt-1">获得点赞</div>
           </div>
         </div>

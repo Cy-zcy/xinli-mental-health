@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { toast } from 'vue-sonner'
+import { recordToolUsage } from '@/api/modules/tools'
 
 definePage({
   meta: {
@@ -170,7 +171,7 @@ function runTimer() {
 }
 
 // 完成冥想
-function completeMeditation() {
+async function completeMeditation() {
   isActive.value = false
   isPaused.value = false
   if (timer.value) {
@@ -182,8 +183,18 @@ function completeMeditation() {
     description: `完成了 ${selectedDuration.value} 分钟的冥想`,
   })
 
-  // 这里可以记录冥想数据
-  // recordMeditationSession()
+  // 向后端记录本次冥想
+  try {
+    await recordToolUsage({
+      toolType: 'meditation',
+      durationSeconds: selectedDuration.value * 60,
+      completed: true,
+      pattern: selectedTheme.value.name,
+    })
+  }
+  catch {
+    // 静默处理，不影响用户体验
+  }
 }
 
 // 选择主题
