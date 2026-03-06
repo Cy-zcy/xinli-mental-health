@@ -91,6 +91,7 @@ function switchMode() {
 }
 </script>
 
+<template>
   <FmPageLayout :navbar="false" copyright>
     <!-- 极简高级光晕背景 -->
     <div class="fixed inset-0 overflow-hidden pointer-events-none z-0 bg-slate-50 dark:bg-slate-950">

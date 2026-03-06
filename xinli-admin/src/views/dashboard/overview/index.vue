@@ -497,6 +497,7 @@
       console.error('获取健康分预警用户失败')
     } finally {
       lowScoreLoading.value = false
+    }
   }
 
   /**

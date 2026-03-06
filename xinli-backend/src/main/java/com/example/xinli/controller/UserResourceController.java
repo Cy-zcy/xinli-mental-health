@@ -5,6 +5,8 @@ import com.example.xinli.dto.ResourceDTO;
 import com.example.xinli.dto.Result;
 import com.example.xinli.entity.InterventionResource;
 import com.example.xinli.service.InterventionResourceService;
+import com.example.xinli.service.UserScoreService;
+import com.example.xinli.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +21,9 @@ public class UserResourceController {
 
     @Autowired
     private InterventionResourceService resourceService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
 
     /**
      * 1. 获取上架资源列表（分页，支持类型筛选）
@@ -53,7 +58,7 @@ public class UserResourceController {
             
             // ==== 健康分埋点：资源学习加分 ====
             if (token != null && token.startsWith("Bearer ")) {
-                Long userId = com.example.xinli.utils.AuthUtils.getUserIdFromToken(token.substring(7));
+                Long userId = jwtUtil.getUserIdFromToken(token.substring(7));
                 if (userId != null) {
                     // 每日最多加3分（前3次有效）
                     if (!userScoreService.isDailyLimitReached(userId, "RESOURCE", 3)) {
