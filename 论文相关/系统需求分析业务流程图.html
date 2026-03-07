@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统需求分析 - 分模块业务流程图</title>
+    <style>
+        body {
+            font-family: 'SimSun', 'Microsoft YaHei', sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            /* 进一步压紧宽度以方便插入Word */
+            text-align: center;
+            margin-bottom: 60px;
+            /* 拉开模块间的截图距离 */
+        }
+
+        h2 {
+            color: #000;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#ffffff',
+                primaryTextColor: '#000000',
+                primaryBorderColor: '#000000',
+                lineColor: '#000000',
+                secondaryColor: '#ffffff',
+                tertiaryColor: '#ffffff',
+                fontFamily: 'SimSun'
+            },
+            flowchart: {
+                nodeSpacing: 30,
+                rankSpacing: 35,
+                htmlLabels: true
+            }
+        });
+    </script>
+</head>
+
+<body>
+
+    <!-- 模块一：用户身份与基础功能 -->
+    <div class="container">
+        <h2>图 3.1 用户注册登录及档案操作流程图 (对应3.1.1节)</h2>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000,shape:rect;
+
+            Start([用户访问系统]) --> Nav[前端注册/登录路由]
+            Nav --> Input[填写并验证表单信息]
+            Input --> API[发送账号请求拦截]
+            API --> BAuth{验证合法性与校验签}
+            BAuth -- 拒绝 --> Fail[打回并提示错误信息]
+            BAuth -- 成功生成Token --> Token[下发 Token 放行]
+            Token --> Dash[跳入个人系统大厅]
+            Dash --> Info[进入档案管理页面]
+            Info --> Mod[维护修改个人背景设定]
+            Mod --> End([系统落地持久化修改])
+        </div>
+    </div>
+
+    <!-- 模块二：量表测试与得分预警 -->
+    <div class="container">
+        <h2>图 3.2 心理量表测评算分与预警联动图 (对应3.1.2节)</h2>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000,shape:rect;
+
+            S([用户点击开始测评]) --> Load[依据业务字典批量提取问卷参数]
+            Load --> Render[Vue 前端动态挂载渲染主客观题版]
+            Render --> Fill[用户答题并保存每项独立得分]
+            Fill --> Submit[请求发送测评表单明细]
+            Submit --> Calc[后端算法融合叠加生成整体综合评分]
+            Calc --> Judge{是否超过红色预警阀值?}
+            Judge -- 否 --> Normal[通过雷达图返回常态健康结果]
+            Judge -- 是 --> Warn[自动封存带有危改标签的记录]
+            Warn --> Admin[跨模块推送急迫工单给后台巡查组]
+            Admin --> Normal
+            Normal --> E([测试结束并归档])
+        </div>
+    </div>
+
+    <!-- 模块三：AI 智能记忆干预 -->
+    <div class="container">
+        <h2>图 3.3 携卷记忆的多人格AI陪聊介入图 (对应3.1.3节)</h2>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000,shape:rect;
+
+            S([用户拉起心理干预对话室]) --> T1[调取数据库AI伴侣全量字典卡片]
+            T1 --> T2[选择符合自身当前诉求的人格进行连线]
+            T2 --> Fetch[提取该用户之前所有的量表打分隐式明细]
+            Fetch --> Prompt[混合初始性格Prompt与健康报告向大模型构建系统语料]
+            Prompt --> Chat[开放前端多轮文字与语音输入组件]
+            Chat --> Cut[长周期聊天触发挥发截断记忆算计防忘丢失]
+            Cut --> LLM[(向云端大模型接口请求交互回应)]
+            LLM --> T5[前端解析渲染具备情绪抚慰效果的解答诊断]
+            T5 --> E([继续下一轮循环对话])
+        </div>
+    </div>
+
+    <!-- 模块四：论坛及后台统一管控 (合并简化) -->
+    <div class="container">
+        <h2>图 3.4 互助社区交互与管理者后台审查流转图 (对应3.1.4和3.2节)</h2>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000,shape:rect;
+
+            S([前端互助大厅/科普书架与管控入口]) --> S1{用户操作行为}
+
+            S1 -- 查阅科普 --> R1[播放放松冥想视频或调取图文解压资料]
+            S1 -- 发表心声 --> R2[基于匿名制进行情感树洞灌水与评论回复]
+            S1 -- 后门通道进入主板 --> Sys[只有强权者方可进入审核与数据大盘页]
+
+            Sys --> A1[统计各用户段使用频率趋势以渲染大盘仪表盘]
+            Sys --> A2[针对前台极端发言或恶俗图片进行紧急打回撤下遮盖操作]
+            Sys --> A3[自定义预调校新增专属AI机器人背景变量值维护系统]
+
+            R1 --> End([操作响应呈现完毕])
+            R2 --> End
+            A1 --> End
+            A2 --> End
+            A3 --> End
+        </div>
+    </div>
+
+</body>
+
+</html>

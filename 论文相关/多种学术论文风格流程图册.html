@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第三章: 需求与功能示意图合集(极限竖向版)</title>
+    <style>
+        body {
+            font-family: 'SimSun', 'Microsoft YaHei', sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        h2 {
+            color: #000;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .desc {
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            text-align: left;
+            text-indent: 2em;
+        }
+
+        .mermaid {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#ffffff',
+                primaryTextColor: '#000000',
+                primaryBorderColor: '#000000',
+                lineColor: '#000000',
+                secondaryColor: '#ffffff',
+                tertiaryColor: '#ffffff',
+                fontFamily: 'SimSun'
+            },
+            flowchart: {
+                htmlLabels: true,
+                rankSpacing: 40,
+                nodeSpacing: 25 /* 因为末梢已经是细长条，间距调整为 25 以保持清晰不堆叠 */
+            }
+        });
+    </script>
+</head>
+
+<body>
+
+    <!-- 风格 1：大众用户功能权限树状图（完全参照图3.4竖向单字排列） -->
+    <div class="container">
+        <h2>图 3.1 平台大众用户端功能权限示意图</h2>
+        <div class="desc">大众用户（前端使用群体）所具备的系统操作权限与功能架构树：</div>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000;
+            classDef none fill:none,stroke:none;
+
+            Actor((大众用户))
+
+            %% 一级功能分类
+            Actor --- M1[基础档案]
+            Actor --- M2[量表测算]
+            Actor --- M3[AI 陪伴]
+            Actor --- M4[社区科普]
+
+            %% 二级具体动作：将每一个汉字用 <br /> 强行隔开，变成完全的瘦长柱状图体
+            M1 --- M11[账<br />号<br />注<br />册]
+            M1 --- M12[资<br />料<br />修<br />改]
+            M1 --- M13[安<br />全<br />退<br />出]
+
+            M2 --- M21[心<br />理<br />问<br />卷]
+            M2 --- M22[系<br />统<br />核<br />分]
+            M2 --- M23[测<br />评<br />报<br />告]
+
+            M3 --- M31[挑<br />选<br />人<br />设]
+            M3 --- M32[连<br />线<br />聊<br />天]
+            M3 --- M33[清<br />除<br />记<br />录]
+
+            M4 --- M41[树<br />洞<br />发<br />帖]
+            M4 --- M42[资<br />源<br />浏<br />览]
+            M4 --- M43[视<br />频<br />观<br />看]
+        </div>
+    </div>
+
+    <!-- 风格 2：系统后台管理者功能树状图（完全竖向版） -->
+    <div class="container">
+        <h2>图 3.2 平台巡查管理员权限架构示意图</h2>
+        <div class="desc">系统管理者在控制端（`xinli-admin` 范畴）掌握的大盘监控、管控与维护功能架构树：</div>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000;
+
+            Actor((系统管理))
+
+            %% 一级分类
+            Actor --- A1[平台大盘]
+            Actor --- A2[防线预案]
+            Actor --- A3[系统参数]
+
+            %% 二级具体动作强制拆成竖向长条麻将块
+            A1 --- A11[访<br />问<br />统<br />计]
+            A1 --- A12[结<br />果<br />审<br />阅]
+
+            A2 --- A21[服<br />务<br />器<br />监<br />控]
+            A2 --- A22[违<br />规<br />下<br />架]
+
+            A3 --- A31[参<br />数<br />调<br />整]
+            A3 --- A32[性<br />格<br />配<br />置]
+        </div>
+    </div>
+
+    <!-- 风格 3：业务执行流程走向图 -->
+    <div class="container">
+        <h2>图 3.3 用户客户端访问与越权拦截控制流程示意图</h2>
+        <div class="desc">用户打开前端页面后，请求是否被允许放行到业务各模块底层的登录鉴权及防篡改流转过程：</div>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000;
+
+            Start([客户端首<br />屏主页]) --> Input[/请求拦截<br />与鉴权/]
+            Input --> Valid{服务端执行<br />数据合法判定}
+            Valid -- N(打回) --> Reject[返回异常状态<br />报错拦截]
+            Reject --> Input
+
+            Valid -- Y(通过) --> Iss[下发含有效期<br />的Token票据]
+
+            Iss --> Req[携带全局Token<br />尝试获取资源]
+
+            Req --> Intercept{Token有效<br />且未被阻断?}
+            Intercept -- N --> Clear[清除本地浏览器<br />缓存退还页面]
+            Clear --> Start
+
+            Intercept -- Y --> B1[下发 JSON 业务<br />私密数据包]
+            B1 --> END([前台正常呈现模块操作])
+        </div>
+    </div>
+
+    <!-- 风格 4：带判定和分支的复杂业务流 -->
+    <div class="container">
+        <h2>图 3.4 心理量表测评算分与明细录入工作流示意图</h2>
+        <div class="desc">大众进入测评区后，系统对其分值进行自动捕捉加总，并进行数据库写入记录及后台核审的详细流程：</div>
+        <div class="mermaid">
+            graph TD
+            classDef default fill:#fff,stroke:#000,stroke-width:1px,color:#000;
+
+            S([切入测评考试模块区]) --> D1[/前端通过字典表<br />拉取渲染主观题/]
+            D1 --> D2[用户选填每一项<br />触发计分动作]
+            D2 --> Check{校验系统是否<br />完成所有必答项?}
+            Check -- 未完成 --> D2
+
+            Check -- 已完成 --> Post[向底层服务发送<br />整套评测得分结果]
+            Post --> Calc[在后台服务端触发<br />分数计算统计操作]
+            Calc --> DBWRITE[(将用户得分结果<br />物理持久写入表)]
+
+            DBWRITE --> Front[向用户下发生成<br />的最终成绩面板]
+            DBWRITE --> Admin[向Admin端成绩<br />单台账列表同步]
+
+            Front --> Done([用户退出查阅])
+            Admin --> Done
+        </div>
+    </div>
+
+</body>
+
+</html>
