@@ -21,6 +21,62 @@ const targetCycles = ref(5)
 // 练习是否已完成
 const isCompleted = ref(false)
 
+// 获取最优质的中文女声
+function getBestVoice(): SpeechSynthesisVoice | null {
+  const voices = window.speechSynthesis.getVoices()
+  if (!voices?.length) return null
+
+  // 对所有声音评分，分越高质量越好
+  let bestVoice: SpeechSynthesisVoice | null = null
+  let maxScore = -1
+
+  for (const v of voices) {
+    // 必须是中文
+    if (!v.lang.toLowerCase().includes('zh')) continue
+
+    let score = 0
+    const name = v.name.toLowerCase()
+
+    // 1. 最高优先级：微软的高级/自然在线语音 (Edge 浏览器特有，极度逼真)
+    if (name.includes('xiaoxiao') && name.includes('online')) score += 100
+    else if (name.includes('xiaoxiao')) score += 90 // 晓晓 (女声中最温柔的)
+    else if (name.includes('shaanxi') && name.includes('xiaoni')) score += 80 // 地方亲切女声
+    else if (name.includes('natural')) score += 50
+    else if (name.includes('online')) score += 40
+    
+    // 2. 次优先级：特定大厂的高质量女声
+    else if (name.includes('tingting')) score += 30 // 苹果的中文女声
+    else if (name.includes('google 简体中文')) score += 20 // 谷歌标准女声
+
+    // 3. 通用关键字筛选 (加分项)
+    if (name.includes('female') || name.includes('女')) score += 10
+
+    // 4. 减分项：避免拿到粗犷的男声或过于呆板的机读语音
+    if (name.includes('yunxi') || name.includes('yunye') || name.includes('male') || name.includes('男')) score -= 100
+
+    if (score > maxScore) {
+      maxScore = score
+      bestVoice = v
+    }
+  }
+
+  // 兜底：如果没挑出来高质量的，找系统默认的中文语音
+  if (!bestVoice) {
+    bestVoice = voices.find(v => v.lang.includes('zh') && v.default) 
+             || voices.find(v => v.lang.includes('zh-cn') || v.lang.includes('zh-tw')) 
+             || null
+  }
+  
+  return bestVoice
+}
+
+// 确保语音库被异步加载 (重点修复某些浏览器第一次点不发声或声音不对的问题)
+if (window.speechSynthesis && window.speechSynthesis.onvoiceschanged === null) {
+  window.speechSynthesis.onvoiceschanged = () => {
+    // 浏览器后台拉取完语音库后触发
+  }
+}
+
 // TTS 语音播放核心逻辑（优先中文字符女声）
 function playVoice(text: string) {
   if (!window.speechSynthesis) return
@@ -29,17 +85,15 @@ function playVoice(text: string) {
   window.speechSynthesis.cancel()
   
   const utterance = new SpeechSynthesisUtterance(text)
-  // 设置声音属性：更温柔、偏慢
   utterance.lang = 'zh-CN'
   utterance.rate = 0.8  // 语速稍慢，更舒缓
   utterance.pitch = 1.1 // 音调略高，女声感觉更明显
   utterance.volume = 0.6 // 音量中等，不刺耳
   
-  // 尝试寻找特定的中文(女)声库
-  const voices = window.speechSynthesis.getVoices()
-  const zhVoice = voices.find(v => v.lang.includes('zh') && (v.name.includes('Xiaoxiao') || v.name.includes('female') || v.name.includes('女')))
-  if (zhVoice) {
-    utterance.voice = zhVoice
+  // 智能分配最佳声音
+  const bestVoice = getBestVoice()
+  if (bestVoice) {
+    utterance.voice = bestVoice
   }
   
   window.speechSynthesis.speak(utterance)
@@ -135,6 +189,36 @@ const phaseColor = computed(() => {
   }
 })
 
+// 多样化的语音文案库
+const voicePrompts = {
+  inhale: [
+    '慢慢吸气，感受气息充满身体……',
+    '随节奏吸气，接纳这一刻的宁静……',
+    '深深吸气，放松你的双肩……',
+    '缓慢吸气，感受能量进入体内……',
+    '轻柔地吸气，什么都不要想……'
+  ],
+  hold: [
+    '屏住呼吸，留住这里的平静……',
+    '保持屏息，感受身体的静定……',
+    '稍微停顿一下，别着急……',
+    '停在这里，体会此刻的轻盈……'
+  ],
+  exhale: [
+    '缓缓呼气，把疲惫都吐出去……',
+    '慢慢呼气，让大脑跟着放空……',
+    '沉郁地呼气，感受压力的释放……',
+    '温柔地呼出，一切都会变好的……',
+    '随着呼气，让肩膀彻底垂下来……'
+  ]
+}
+
+// 随机获取一句引导文案
+function getRandomPrompt(phase: 'inhale' | 'hold' | 'exhale') {
+  const prompts = voicePrompts[phase]
+  return prompts[Math.floor(Math.random() * prompts.length)]
+}
+
 // 开始呼吸练习
 function startBreathing() {
   if (isActive.value) {
@@ -148,7 +232,12 @@ function startBreathing() {
   currentCount.value = 0
   totalCycles.value = 0
 
-  playVoice('准备开始。请跟随节奏，慢慢吸气……')
+  const startLines = [
+    '准备好了吗？闭上眼睛，我们一起深吸一口气……',
+    '深呼吸马上开始，请找个舒服的姿势，慢慢吸气……',
+    '把注意力收回到当下，跟随我的指引，吸气……'
+  ]
+  playVoice(startLines[Math.floor(Math.random() * startLines.length)])
   runBreathingCycle()
 }
 
@@ -161,7 +250,7 @@ function stopBreathing() {
   }
   currentCount.value = 0
   if (!isCompleted.value) {
-    playVoice('练习已停止')
+    playVoice('没关系，随时可以重新开始。')
     toast.info('呼吸练习已停止')
   }
 }
@@ -190,11 +279,14 @@ function switchToNextPhase() {
   switch (currentPhase.value) {
     case 'inhale':
       currentPhase.value = 'hold'
-      playVoice('屏住呼吸')
+      // 只有在屏息时间大于 0 时才播报屏息文案，提升自然度
+      if (selectedPattern.value.hold > 0) {
+        playVoice(getRandomPrompt('hold'))
+      }
       break
     case 'hold':
       currentPhase.value = 'exhale'
-      playVoice('缓缓呼气……')
+      playVoice(getRandomPrompt('exhale'))
       break
     case 'exhale':
       currentPhase.value = 'pause'
@@ -208,7 +300,7 @@ function switchToNextPhase() {
         completeSession()
         return
       } else {
-        playVoice('慢慢吸气……')
+        playVoice(getRandomPrompt('inhale'))
       }
       break
   }
@@ -296,10 +388,11 @@ onBeforeUnmount(() => {
       </div>
 
       <!-- 呼吸可视化区域 (未完成时展示) -->
-      <div v-else class="flex-1 flex flex-col items-center justify-center p-8 relative z-10">
+      <div v-else class="flex-1 flex flex-col items-center justify-center p-8 relative z-10 transition-all duration-700"
+           :class="isActive ? '' : 'pb-[320px]'">
         
         <!-- 呼吸圆圈与多层波纹 -->
-        <div class="relative w-64 h-64 flex items-center justify-center mt-10 mb-16 select-none pointer-events-none">
+        <div class="relative w-56 h-56 md:w-64 md:h-64 flex items-center justify-center mt-2 mb-8 select-none pointer-events-none">
            <!-- 外围扩散波纹 1 (吸气时向外扩散并淡出) -->
            <div class="absolute inset-0 rounded-full bg-white/10"
                 :class="{ 'animate-ping': isActive && currentPhase === 'inhale', 'opacity-0': !isActive || currentPhase === 'exhale' }"
@@ -338,9 +431,9 @@ onBeforeUnmount(() => {
 
         <!-- 练习信息，只有没开始才显示，开始了就隐藏，追求绝对沉浸 -->
         <div class="transition-all duration-1000 w-full"
-             :class="isActive ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'">
+             :class="isActive ? 'opacity-0 translate-y-4 pointer-events-none h-0 overflow-hidden' : 'opacity-100 translate-y-0'">
             <h2 class="text-2xl font-light text-white mb-2 text-center">{{ selectedPattern.name }}</h2>
-            <p class="text-slate-400 mb-10 text-center text-sm px-4">{{ selectedPattern.description }}</p>
+            <p class="text-slate-400 mb-6 text-center text-sm px-4">{{ selectedPattern.description }}</p>
             
             <!-- 开始按钮 -->
             <div class="flex justify-center">

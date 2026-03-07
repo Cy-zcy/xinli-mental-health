@@ -23,6 +23,12 @@ const messages = ref<ChatMessage[]>([])
 const inputMessage = ref('')
 const messagesContainer = ref<HTMLElement>()
 
+// 获取完整的头像 URL
+const getAvatarUrl = (url?: string) => {
+  if (!url) return ''
+  if (url.startsWith('http') || url.startsWith('data:')) return url
+  return `${import.meta.env.VITE_APP_API_BASEURL || ''}${url}`
+}
 // 资源推荐
 const recommendedResources = ref<ResourceItem[]>([])
 const showRecommendations = ref(false)
@@ -420,7 +426,7 @@ onMounted(() => {
               <div class="text-center animate-fade-in-up w-full px-6">
                 <div class="w-24 h-24 mx-auto rounded-[28px] bg-gradient-to-tr from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-900/30 flex items-center justify-center mb-6 shadow-md border border-white/50 dark:border-slate-700/30 relative">
                   <template v-if="characters.find(c => c.id === selectedCharacterId)?.avatar">
-                    <img v-if="!characters.find(c => c.id === selectedCharacterId)?.avatar?.startsWith('i-')" :src="characters.find(c => c.id === selectedCharacterId)?.avatar" class="w-full h-full rounded-[28px] object-cover" />
+                    <img v-if="!characters.find(c => c.id === selectedCharacterId)?.avatar?.startsWith('i-')" :src="getAvatarUrl(characters.find(c => c.id === selectedCharacterId)?.avatar)" class="w-full h-full rounded-[28px] object-cover" />
                     <Icon v-else :icon="characters.find(c => c.id === selectedCharacterId)?.avatar?.replace(/^i-/, '')" class="text-5xl text-inherit" />
                   </template>
                   <FmIcon v-else name="i-carbon:chat-bot" class="text-5xl text-indigo-400 dark:text-indigo-300" />
@@ -467,7 +473,7 @@ onMounted(() => {
                 >
                   <div class="relative flex-shrink-0 flex items-center justify-center">
                     <template v-if="char.avatar">
-                      <img v-if="!char.avatar.startsWith('i-')" :src="char.avatar" class="w-14 h-14 rounded-2xl object-cover shadow-sm" />
+                      <img v-if="!char.avatar.startsWith('i-')" :src="getAvatarUrl(char.avatar)" class="w-14 h-14 rounded-2xl object-cover shadow-sm" />
                       <div v-else class="w-14 h-14 rounded-2xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center">
                         <Icon :icon="char.avatar.replace(/^i-/, '')" class="text-3xl text-slate-600 dark:text-slate-300" />
                       </div>
@@ -503,7 +509,7 @@ onMounted(() => {
                 <div class="flex gap-2.5 max-w-[90%]">
                   <div class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-sm border border-slate-200/50 dark:border-slate-700 mt-0.5 overflow-hidden">
                     <template v-if="characters.find(c => c.id === selectedCharacterId)?.avatar">
-                      <img v-if="!characters.find(c => c.id === selectedCharacterId)?.avatar?.startsWith('i-')" :src="characters.find(c => c.id === selectedCharacterId)?.avatar" class="w-full h-full object-cover" />
+                      <img v-if="!characters.find(c => c.id === selectedCharacterId)?.avatar?.startsWith('i-')" :src="getAvatarUrl(characters.find(c => c.id === selectedCharacterId)?.avatar)" class="w-full h-full object-cover" />
                       <Icon v-else :icon="characters.find(c => c.id === selectedCharacterId)?.avatar?.replace(/^i-/, '')" class="text-[20px] text-slate-600 dark:text-slate-300" />
                     </template>
                     <FmIcon v-else name="i-carbon:chat-bot" class="text-sm text-indigo-500 dark:text-indigo-400" />

@@ -317,16 +317,6 @@ onMounted(async () => {
           </div>
         </div>
       </div>
-
-      <!-- 悬浮发帖按钮 -->
-      <div class="fixed bottom-24 right-6 z-20">
-        <FmButton
-          class="w-16 h-16 rounded-full shadow-xl bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 border-0 transform hover:scale-105 transition-all duration-200"
-          @click="createPost"
-        >
-          <FmIcon name="i-carbon:add" class="text-7 text-white" />
-        </FmButton>
-      </div>
     </div>
   </FmPageLayout>
 </template>
