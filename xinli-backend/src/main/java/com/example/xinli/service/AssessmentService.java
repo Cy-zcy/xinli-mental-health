@@ -32,6 +32,13 @@ public interface AssessmentService {
      */
     List<AssessmentResultDTO> getUserAssessmentHistory(Long userId);
 
+    /**
+     * 获取单条测评结果详情（含维度分析）
+     * @param recordId 测评记录ID
+     * @param userId 当前登录用户ID（用于权限校验）
+     */
+    AssessmentResultDTO getAssessmentResultById(Long recordId, Long userId);
+
     // ============ Admin 端管理接口 - 问卷 ============
 
     /**

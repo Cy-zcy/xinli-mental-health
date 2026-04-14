@@ -30,15 +30,18 @@ public class UserNotificationController {
     /**
      * 获取当前用户的通知列表（分页）
      * GET /api/notifications
+     * @param type 通知类型筛选（ALL/SYSTEM/CRISIS/LIKE）
      */
     @GetMapping
     public Result<Page<UserNotification>> getNotifications(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "ALL") String type,
             HttpServletRequest request) {
         Long userId = getUserIdFromToken(request);
         if (userId == null) return Result.error(401, "用户未登录");
-        return Result.success(notificationService.getUserNotifications(userId, page, size));
+        String filterType = "ALL".equalsIgnoreCase(type) ? null : type;
+        return Result.success(notificationService.getUserNotifications(userId, page, size, filterType));
     }
 
     /**
@@ -76,6 +79,43 @@ public class UserNotificationController {
         if (userId == null) return Result.error(401, "用户未登录");
         notificationService.markAllRead(userId);
         return Result.success();
+    }
+
+    /**
+     * 获取各类型未读数量统计
+     * GET /api/notifications/unread-stats
+     */
+    @GetMapping("/unread-stats")
+    public Result<Map<String, Long>> getUnreadStats(HttpServletRequest request) {
+        Long userId = getUserIdFromToken(request);
+        if (userId == null) return Result.error(401, "用户未登录");
+        return Result.success(notificationService.getUnreadCountByType(userId));
+    }
+
+    /**
+     * 删除单条通知
+     * DELETE /api/notifications/{id}
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> deleteNotification(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = getUserIdFromToken(request);
+        if (userId == null) return Result.error(401, "用户未登录");
+        boolean success = notificationService.deleteNotification(id, userId);
+        return success ? Result.success() : Result.error(404, "通知不存在或无权删除");
+    }
+
+    /**
+     * 清空所有通知
+     * DELETE /api/notifications/all
+     */
+    @DeleteMapping("/all")
+    public Result<Map<String, Object>> deleteAllNotifications(HttpServletRequest request) {
+        Long userId = getUserIdFromToken(request);
+        if (userId == null) return Result.error(401, "用户未登录");
+        int count = notificationService.deleteAllNotifications(userId);
+        Map<String, Object> data = new HashMap<>();
+        data.put("deletedCount", count);
+        return Result.success(data);
     }
 
     private Long getUserIdFromToken(HttpServletRequest request) {

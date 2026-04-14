@@ -93,7 +93,7 @@ export class ResourceService {
     static updateResourceStatus(id: number, status: number) {
         return request.put<void>({
             url: `/api/admin/resource/${id}/status`,
-            params: { status }
+            data: { status }   // 后端用 @RequestBody 接收，必须用 data 而非 params
         } as any)
     }
 

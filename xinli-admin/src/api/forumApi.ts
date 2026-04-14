@@ -35,14 +35,14 @@ export class AdminForumService {
 
   // 删除帖子
   static deletePost(postId: number) {
-    return request.delete({
+    return request.del({
       url: `/api/admin/posts/${postId}`
     })
   }
 
   // 批量删除帖子
   static batchDeletePosts(postIds: number[]) {
-    return request.delete({
+    return request.del({
       url: '/api/admin/forum/posts/batch',
       data: { ids: postIds }
     })

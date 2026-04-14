@@ -84,7 +84,15 @@ function formatRelativeTime(dateString: string) {
 }
 
 function goBack() {
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/chat')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 // 页面加载时获取会话详情
@@ -100,6 +108,9 @@ onMounted(() => {
 
 <template>
   <FmPageLayout title="对话详情" :navbar="{ back: true }" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <div class="flex flex-1 flex-col">
       <!-- 加载状态 -->
       <FmLoading v-if="loading" type="wave" text="加载中..." />

@@ -24,11 +24,23 @@ async function loadDetail() {
   }
   catch (e: any) {
     toast.error('加载失败', { description: e?.message || '资源不存在或已下架' })
-    router.back()
+    goBack()
   }
   finally {
     loading.value = false
   }
+}
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/resource')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 function getTypeLabel(type: string) {
@@ -47,7 +59,10 @@ onMounted(() => loadDetail())
 </script>
 
 <template>
-  <FmPageLayout :navbar="{ back: true }" :tabbar="false" @back="router.back()">
+  <FmPageLayout :navbar="{ back: true }" :tabbar="false" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <!-- 加载中 -->
     <FmLoading v-if="loading" type="wave" text="加载中..." />
 

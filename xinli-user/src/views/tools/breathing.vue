@@ -358,7 +358,15 @@ function goBack() {
   if (window.speechSynthesis) {
     window.speechSynthesis.cancel()
   }
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/tools')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 // 页面离开时清理定时器和语音
@@ -374,6 +382,9 @@ onBeforeUnmount(() => {
 
 <template>
   <FmPageLayout title="深呼吸沉浸放松" :navbar="{ back: true }" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <div class="flex flex-1 flex-col bg-slate-900 transition-colors duration-1000 overflow-hidden relative">
       
       <!-- 庆祝页面 (isCompleted为true时展示) -->

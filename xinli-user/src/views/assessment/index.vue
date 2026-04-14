@@ -59,7 +59,7 @@ onMounted(() => loadAssessments())
             心理测评
           </h1>
           <button
-            class="text-white/80 text-sm flex items-center gap-1 hover:text-white transition-colors"
+            class="bg-white/20 hover:bg-white/30 text-white text-sm flex items-center gap-1.5 px-3 py-1.5 rounded-full backdrop-blur-sm transition-all border border-white/30"
             @click="viewHistory"
           >
             <FmIcon name="i-carbon:document" class="text-4" />

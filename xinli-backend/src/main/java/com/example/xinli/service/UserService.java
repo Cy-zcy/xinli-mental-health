@@ -147,4 +147,14 @@ public class UserService {
         }
         return userMapper.selectBatchIds(userIds);
     }
+
+    /**
+     * 设置用户健康分（用于测试数据生成）
+     */
+    public boolean setHealthScore(Long userId, Integer score) {
+        User user = new User();
+        user.setId(userId);
+        user.setHealthScore(score);
+        return userMapper.updateById(user) > 0;
+    }
 }

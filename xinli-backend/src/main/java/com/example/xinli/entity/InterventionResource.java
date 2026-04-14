@@ -34,4 +34,27 @@ public class InterventionResource {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    // ===== 前后端字段兼容 =====
+    /** 前端使用 isPublished，后端存储字段是 status */
+    @com.fasterxml.jackson.annotation.JsonProperty("isPublished")
+    public Integer getIsPublished() {
+        return this.status;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("isPublished")
+    public void setIsPublished(Integer isPublished) {
+        this.status = isPublished;
+    }
+
+    /** 前端使用 mediaUrl，后端存储字段是 resourceUrl */
+    @com.fasterxml.jackson.annotation.JsonProperty("mediaUrl")
+    public String getMediaUrl() {
+        return this.resourceUrl;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonProperty("mediaUrl")
+    public void setMediaUrl(String mediaUrl) {
+        this.resourceUrl = mediaUrl;
+    }
 }

@@ -479,6 +479,8 @@
   const assessmentChartRef = ref<HTMLElement | null>(null)
   const trendChartRef = ref<HTMLElement | null>(null)
   // ECharts 实例引用
+  let userChart: echarts.ECharts | null = null
+  let postChart: echarts.ECharts | null = null
   let assessmentChart: echarts.ECharts | null = null
   let trendChart: echarts.ECharts | null = null
 
@@ -529,9 +531,12 @@
 
         userStats.value.total = response.totalUsers
         userStats.value.active = response.activeUsers
+        forumStats.value.totalPosts = response.totalPosts
         forumStats.value.activePosts = response.totalPosts - response.pendingPosts
 
         nextTick(() => {
+          renderUserChart(response as any)
+          renderPostChart(response as any)
           renderAssessmentChart(response as any)
           renderTrendChart(response as any)
         })
@@ -559,6 +564,98 @@
     } catch (error) {
       console.error('获取AI聊天统计数据失败:', error)
     }
+  }
+
+  /**
+   * 渲染用户增长趋势折线图
+   */
+  const renderUserChart = (stats: any) => {
+    if (!userChartRef.value || !stats.userGrowthTrends) return
+    if (!userChart) {
+      userChart = echarts.init(userChartRef.value)
+    }
+
+    const months = stats.userGrowthTrends.map((t: any) => t.month)
+    const userData = stats.userGrowthTrends.map((t: any) => t.newUsers)
+
+    userChart.setOption({
+      tooltip: {
+        trigger: 'axis'
+      },
+      grid: {
+        left: '3%',
+        right: '4%',
+        bottom: '3%',
+        containLabel: true
+      },
+      xAxis: {
+        type: 'category',
+        boundaryGap: false,
+        data: months
+      },
+      yAxis: {
+        type: 'value'
+      },
+      color: ['#667eea'],
+      series: [
+        {
+          name: '新增用户',
+          type: 'line',
+          smooth: true,
+          data: userData,
+          areaStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+              { offset: 0, color: 'rgba(102, 126, 234, 0.3)' },
+              { offset: 1, color: 'rgba(102, 126, 234, 0.05)' }
+            ])
+          },
+          lineStyle: {
+            width: 2
+          },
+          itemStyle: {
+            color: '#667eea'
+          }
+        }
+      ]
+    })
+  }
+
+  /**
+   * 渲染帖子分类统计饼图
+   */
+  const renderPostChart = (stats: any) => {
+    if (!postChartRef.value || !stats.postCategoryStats) return
+    if (!postChart) {
+      postChart = echarts.init(postChartRef.value)
+    }
+
+    const data = stats.postCategoryStats.map((item: any) => ({
+      name: item.category,
+      value: item.count
+    }))
+
+    postChart.setOption({
+      tooltip: {
+        trigger: 'item',
+        formatter: '{b}: {c} ({d}%)'
+      },
+      legend: {
+        orient: 'vertical',
+        left: 'left'
+      },
+      color: ['#409EFF', '#67C23A', '#E6A23C', '#F56C6C', '#909399'],
+      series: [{
+        name: '帖子分类',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        center: ['60%', '50%'],
+        label: {
+          show: true,
+          formatter: '{b}\n{d}%'
+        },
+        data: data
+      }]
+    })
   }
 
   /**
@@ -686,7 +783,7 @@
    * 跳转到论坛管理
    */
   const goToForumManage = () => {
-    router.push('/forum/posts')
+    router.push('/forum/management')
   }
 
   /**
@@ -709,6 +806,8 @@
     fetchStats()
     // 监听窗口大小变化，重绘 ECharts
     window.addEventListener('resize', () => {
+      userChart?.resize()
+      postChart?.resize()
       assessmentChart?.resize()
       trendChart?.resize()
     })

@@ -118,7 +118,15 @@ const onChangePassword = passwordForm.handleSubmit(async (values) => {
 })
 
 function goBack() {
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 // 头像上传成功处理
@@ -142,6 +150,9 @@ async function handleAvatarUploadSuccess(data: { relativePath: string; url: stri
 
 <template>
   <FmPageLayout title="设置" :navbar="{ back: true }" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <div class="flex flex-1 flex-col gap-6 p-4">
       <!-- 个人信息设置 -->
       <div class="bg-card rounded-lg p-4">

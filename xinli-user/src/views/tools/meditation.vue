@@ -222,7 +222,15 @@ function goBack() {
   if (isActive.value) {
     stopMeditation()
   }
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/tools')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 // 页面离开时清理定时器
@@ -235,6 +243,9 @@ onBeforeUnmount(() => {
 
 <template>
   <FmPageLayout title="冥想引导" :navbar="{ back: true }" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <div class="flex flex-1 flex-col bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-gray-900 dark:to-gray-800">
       <!-- 冥想可视化区域 -->
       <div class="flex-1 flex items-center justify-center p-8">

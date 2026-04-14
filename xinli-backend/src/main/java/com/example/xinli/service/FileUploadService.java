@@ -21,6 +21,12 @@ import java.util.UUID;
 @Service
 public class FileUploadService {
     
+    private static final String[] MEDIA_ALLOWED_EXTENSIONS = {
+        "mp3", "wav", "ogg", "aac",    // 音频
+        "mp4", "webm", "mov", "ogg"    // 视频
+    };
+    private static final long MEDIA_MAX_SIZE = 200L * 1024 * 1024; // 200MB
+
     @Autowired
     private FileUploadConfig fileUploadConfig;
     
@@ -49,6 +55,40 @@ public class FileUploadService {
         
         // 返回相对路径
         return fileUploadConfig.getAvatarPath() + "/" + newFilename;
+    }
+
+    /**
+     * 上传音视频媒体文件
+     * @param file 音频或视频文件
+     * @return 相对路径
+     */
+    public String uploadMedia(MultipartFile file) throws IOException {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("文件不能为空");
+        }
+        String extension = getFileExtension(file.getOriginalFilename());
+        boolean allowed = Arrays.asList(MEDIA_ALLOWED_EXTENSIONS).contains(extension);
+        if (!allowed) {
+            throw new IllegalArgumentException("不支持的媒体文件类型: " + extension
+                + "，仅支持: mp3/wav/ogg/aac/mp4/webm/mov");
+        }
+        if (file.getSize() > MEDIA_MAX_SIZE) {
+            throw new IllegalArgumentException("媒体文件大小不能超过 200MB");
+        }
+
+        // 保存到 uploads/media/ 目录
+        String mediaDir = fileUploadConfig.getBasePath() + "/media";
+        createDirectoryIfNotExists(mediaDir);
+
+        String timestamp = java.time.LocalDateTime.now()
+            .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmss"));
+        String uuid = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+        String newFilename = "media_" + timestamp + "_" + uuid + "." + extension;
+
+        Path filePath = Paths.get(mediaDir, newFilename);
+        Files.write(filePath, file.getBytes());
+
+        return "media/" + newFilename;
     }
     
     /**

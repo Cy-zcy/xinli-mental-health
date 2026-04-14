@@ -64,11 +64,39 @@
 
           <template v-if="form.type !== 'article'">
             <!-- 音视频文件上传或直链 -->
-            <ElFormItem label="媒体链接">
-              <ElInput v-model="form.mediaUrl" placeholder="请输入音视频外链地址，或点击右侧上传" />
-              <div class="el-upload__tip" style="margin-top: 6px; width: 100%;">可以填入外部链接，或者直接上传媒体文件到服务器</div>
+            <ElFormItem label="媒体文件">
+              <div class="media-upload-row">
+                <ElInput
+                  v-model="form.mediaUrl"
+                  placeholder="可粘贴外链地址，或点击右侧按钮上传文件"
+                  class="media-url-input"
+                  clearable
+                />
+                <ElUpload
+                  :action="uploadMediaUrl"
+                  :headers="uploadHeaders"
+                  :show-file-list="false"
+                  :before-upload="beforeUploadMedia"
+                  :on-success="onMediaSuccess"
+                  :on-error="onError"
+                  :accept="form.type === 'audio' ? 'audio/*' : 'video/*'"
+                >
+                  <ElButton :loading="uploadingMedia" type="primary" plain>
+                    <ElIcon v-if="!uploadingMedia"><Upload /></ElIcon>
+                    {{ uploadingMedia ? '上传中...' : '上传文件' }}
+                  </ElButton>
+                </ElUpload>
+              </div>
+              <div class="el-upload__tip" style="margin-top: 6px; width: 100%;">
+                支持直接上传到服务器（{{ form.type === 'audio' ? 'MP3 / WAV / OGG，建议不超过 50MB' : 'MP4 / WebM / OGG，建议不超过 200MB' }}），或填写外部链接
+              </div>
+              <!-- 上传成功预览 -->
+              <div v-if="form.mediaUrl && form.mediaUrl.startsWith('http')" class="media-preview">
+                <audio v-if="form.type === 'audio'" :src="form.mediaUrl" controls style="width:100%;margin-top:8px;" />
+                <video v-else :src="form.mediaUrl" controls style="width:100%;max-height:180px;margin-top:8px;border-radius:8px;" />
+              </div>
             </ElFormItem>
-            
+
             <ElFormItem label="媒体时长">
                <ElInputNumber v-model="form.duration" :min="0" :step="1" placeholder="秒" />
                <span style="font-size: 12px; margin-left: 10px; color: #8c939d;">如果不填将前端自动解析</span>
@@ -97,7 +125,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, computed } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Upload } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { useRoute, useRouter } from 'vue-router'
@@ -112,7 +140,10 @@ const userStore = useUserStore()
 const { accessToken } = userStore
 
 const uploadImageUrl = `${import.meta.env.VITE_API_URL || ''}/api/common/upload`
+const uploadMediaUrl = `${import.meta.env.VITE_API_URL || ''}/api/common/upload`
 const uploadHeaders = { Authorization: `Bearer ${accessToken}` }
+
+const uploadingMedia = ref(false)
 
 const pageMode = ref<'add' | 'edit'>('add')
 const id = ref<number>(0)
@@ -129,9 +160,9 @@ const form = reactive<ResourceFormData>({
   type: 'article',
   content: '',
   coverUrl: '',
-  mediaUrl: '',
+  mediaUrl: '',   // 前端表单字段（对应后端 resourceUrl）
   tags: '',
-  isPublished: 1,
+  isPublished: 1, // 前端表单字段（对应后端 status）
   duration: 0
 })
 
@@ -160,13 +191,15 @@ const getResourceDetail = async (resourceId: number) => {
   try {
     const res = await ResourceService.getResourceDetail(resourceId)
     if (res) {
-      form.title = res.title
-      form.type = res.type as any
-      form.content = res.content || ''
+      form.title    = res.title
+      form.type     = res.type as any
+      form.content  = res.content || ''
       form.coverUrl = res.coverUrl || ''
-      form.mediaUrl = res.mediaUrl || ''
-      form.tags = res.tags || ''
-      form.isPublished = res.isPublished
+      // 后端字段是 resourceUrl，前端表单字段是 mediaUrl
+      form.mediaUrl = (res as any).resourceUrl || res.mediaUrl || ''
+      form.tags     = res.tags || ''
+      // 后端字段是 status，前端表单字段是 isPublished
+      form.isPublished = (res as any).status ?? res.isPublished ?? 1
       form.duration = res.duration || 0
     }
   } catch (error) {
@@ -208,11 +241,16 @@ const submit = async () => {
   
   submitting.value = true
   try {
-    const submitData = { ...form }
-    
-    // 如果是文章，处理一下富文本尾部空白问题
-    if (submitData.type === 'article' && submitData.content) {
-      submitData.content = delCodeTrim(submitData.content)
+    // 将前端字段名转换为后端实体字段名再提交
+    const submitData: any = {
+      title:       form.title,
+      type:        form.type,
+      content:     form.type === 'article' ? delCodeTrim(form.content || '') : form.content,
+      coverUrl:    form.coverUrl,
+      resourceUrl: form.mediaUrl,   // 前端 mediaUrl → 后端 resourceUrl
+      tags:        form.tags,
+      status:      form.isPublished, // 前端 isPublished → 后端 status
+      duration:    form.duration,
     }
 
     if (pageMode.value === 'edit') {
@@ -248,7 +286,40 @@ const onCoverSuccess = (response: any) => {
 }
 
 const onError = () => {
-  ElMessage.error('图片获取失败')
+  ElMessage.error('上传失败，请检查文件格式或服务器连接')
+  uploadingMedia.value = false
+}
+
+/** 上传媒体文件前的校验 */
+const beforeUploadMedia = (file: File) => {
+  const isAudio = form.type === 'audio'
+  const allowedAudio = ['audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/mp3', 'audio/aac']
+  const allowedVideo = ['video/mp4', 'video/webm', 'video/ogg']
+  const allowed = isAudio ? allowedAudio : allowedVideo
+  if (!allowed.includes(file.type) && !file.type.startsWith(isAudio ? 'audio/' : 'video/')) {
+    ElMessage.error(`请上传正确的${isAudio ? '音频' : '视频'}文件格式`)
+    return false
+  }
+  const maxMB = isAudio ? 50 : 200
+  if (file.size / 1024 / 1024 > maxMB) {
+    ElMessage.error(`文件大小不能超过 ${maxMB}MB`)
+    return false
+  }
+  uploadingMedia.value = true
+  return true
+}
+
+/** 媒体文件上传成功回调 */
+const onMediaSuccess = (response: any) => {
+  uploadingMedia.value = false
+  // 适配后端响应结构
+  const url = response?.data?.url || response?.data || response?.url || ''
+  if (response?.code === 200 && url) {
+    form.mediaUrl = url
+    ElMessage.success('媒体文件上传成功')
+  } else {
+    ElMessage.warning('上传返回结构异常，请手动粘贴URL或检查后端接口')
+  }
 }
 
 const beforeUploadImage = (file: File) => {
@@ -269,6 +340,22 @@ const beforeUploadImage = (file: File) => {
 
 <style lang="scss" scoped>
 .resource-edit {
+  .media-upload-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    align-items: center;
+
+    .media-url-input {
+      flex: 1;
+    }
+  }
+
+  .media-preview {
+    width: 100%;
+    margin-top: 4px;
+  }
+
   .editor-wrap {
     max-width: 1000px;
     margin: 20px auto;

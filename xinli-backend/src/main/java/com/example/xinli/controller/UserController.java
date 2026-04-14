@@ -240,5 +240,26 @@ public class UserController {
             return Result.error("获取用户健康分流水失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 管理端 - 设置用户健康分（用于测试数据生成）
+     * PUT /api/admin/users/{id}/health-score?score=45
+     */
+    @PutMapping("/{id}/health-score")
+    public Result<Void> setUserHealthScore(@PathVariable Long id, @RequestParam Integer score) {
+        try {
+            if (score < 0 || score > 100) {
+                return Result.error("健康分必须在 0-100 之间");
+            }
+            boolean success = userService.setHealthScore(id, score);
+            if (success) {
+                return Result.success();
+            } else {
+                return Result.error("设置健康分失败");
+            }
+        } catch (Exception e) {
+            return Result.error("设置健康分失败: " + e.getMessage());
+        }
+    }
 }
 

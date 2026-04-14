@@ -18,13 +18,24 @@ export interface UserNotification {
     createdAt: string
 }
 
+/** 通知类型枚举 */
+export type NotificationType = 'ALL' | 'SYSTEM' | 'CRISIS' | 'LIKE'
+
+/** 未读统计 */
+export interface UnreadStats {
+    SYSTEM: number
+    CRISIS: number
+    LIKE: number
+}
+
 /**
  * 获取通知列表（分页）
  * GET /api/notifications
+ * @param type 通知类型筛选（ALL/SYSTEM/CRISIS/LIKE）
  */
-export function getNotifications(page = 1, size = 20) {
+export function getNotifications(page = 1, size = 20, type: NotificationType = 'ALL') {
     return api.get<PageResponse<UserNotification>>('/api/notifications', {
-        params: { page, size }
+        params: { page, size, type }
     })
 }
 
@@ -34,6 +45,14 @@ export function getNotifications(page = 1, size = 20) {
  */
 export function getUnreadCount() {
     return api.get<{ count: number }>('/api/notifications/unread-count')
+}
+
+/**
+ * 获取各类型未读数量统计
+ * GET /api/notifications/unread-stats
+ */
+export function getUnreadStats() {
+    return api.get<UnreadStats>('/api/notifications/unread-stats')
 }
 
 /**
@@ -50,4 +69,20 @@ export function markAsRead(id: number) {
  */
 export function markAllRead() {
     return api.put<void>('/api/notifications/read-all')
+}
+
+/**
+ * 删除单条通知
+ * DELETE /api/notifications/{id}
+ */
+export function deleteNotification(id: number) {
+    return api.delete<void>(`/api/notifications/${id}`)
+}
+
+/**
+ * 清空所有通知
+ * DELETE /api/notifications/all
+ */
+export function deleteAllNotifications() {
+    return api.delete<{ deletedCount: number }>('/api/notifications/all')
 }

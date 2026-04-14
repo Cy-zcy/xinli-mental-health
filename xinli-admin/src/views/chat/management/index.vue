@@ -310,7 +310,7 @@ const getRoleLabel = (role: string) => {
 // 获取统计数据
 const loadChatStats = async () => {
   try {
-    const { data } = await AdminChatService.getChatStats()
+    const data = await AdminChatService.getChatStats()
     chatStats.value = data
   } catch (error) {
     console.error('获取统计数据失败:', error)
@@ -380,7 +380,7 @@ const deleteSession = async (session: any) => {
 // 测试AI连接
 const testAiConnection = async () => {
   try {
-    const { data } = await ChatService.testConnection()
+    const data = await ChatService.testConnection()
     if (data) {
       ElMessage.success('AI连接正常')
     } else {

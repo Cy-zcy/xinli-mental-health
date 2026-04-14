@@ -50,9 +50,9 @@ public class UserStatsController {
                 return Result.error(401, "请先登录");
             }
 
-            // 1. AI 聊天会话数
+            // 1. AI 聊天会话数（只统计有效会话）
             long chatSessions = chatSessionMapper.selectCount(
-                    new QueryWrapper<ChatSession>().eq("user_id", userId));
+                    new QueryWrapper<ChatSession>().eq("user_id", userId).eq("status", 1));
 
             // 2. 发帖数（已审核通过的）
             long forumPosts = forumPostMapper.selectCount(

@@ -100,3 +100,18 @@ export function createComment(postId: number, content: string) {
     userAvatar: string
   }>(`/api/forum/posts/${postId}/comments`, { content })
 }
+
+/**
+ * 获取我的帖子列表
+ * GET /api/forum/my-posts
+ * 包含所有状态的帖子（待审核、已通过）
+ */
+export function getMyPosts(params: { page?: number; size?: number } = {}) {
+  return api.get<PageResponse<ForumPost>>('/api/forum/my-posts', {
+    params: {
+      page: 1,
+      size: 10,
+      ...params
+    }
+  })
+}

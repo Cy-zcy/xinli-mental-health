@@ -109,7 +109,7 @@ public class UserForumService {
         post.setCategory(request.getCategory());
         post.setLikeCount(0);
         post.setViewCount(0);
-        post.setStatus(1);
+        post.setStatus(0); // 待审核状态，需要管理员审核通过
         post.setCreatedAt(LocalDateTime.now());
         post.setUpdatedAt(LocalDateTime.now());
 
@@ -324,6 +324,36 @@ public class UserForumService {
         categories.add(experience);
 
         return categories;
+    }
+
+    /**
+     * 获取当前用户的帖子列表（包含所有状态）
+     * 用于"我的帖子"功能
+     */
+    public Page<ForumPostDTO> getMyPosts(Long userId, int page, int size) {
+        Page<ForumPost> pageInfo = new Page<>(page, size);
+        QueryWrapper<ForumPost> wrapper = new QueryWrapper<>();
+
+        // 只查询当前用户的帖子，不限制状态
+        wrapper.eq("user_id", userId);
+        wrapper.orderByDesc("created_at");
+
+        Page<ForumPost> postPage = forumPostMapper.selectPage(pageInfo, wrapper);
+
+        // 转换为DTO
+        Page<ForumPostDTO> dtoPage = new Page<>();
+        BeanUtils.copyProperties(postPage, dtoPage, "records");
+
+        List<ForumPostDTO> dtoList = new ArrayList<>();
+        for (ForumPost post : postPage.getRecords()) {
+            ForumPostDTO dto = convertToForumPostDTO(post);
+            // 设置状态信息（用于前端显示）
+            dto.setStatus(post.getStatus());
+            dtoList.add(dto);
+        }
+        dtoPage.setRecords(dtoList);
+
+        return dtoPage;
     }
 
     /**

@@ -30,14 +30,20 @@ public class FileUploadController {
     private JwtUtil jwtUtil;
     
     /**
-     * 通用文件上传（用于封面、音视频等）
+     * 通用文件上传（自动识别图片/音视频，用于封面、音视频资源等）
      */
     @PostMapping("/common/upload")
     public Result<String> uploadCommonFile(@RequestParam("file") MultipartFile file) {
         try {
-            // 这里为了通用，暂时借用 uploadAvatar 方法的逻辑保存文件（或者应该在 FileUploadService 中加个 uploadCommon）
-            // 因为现在没看到服务层，所以暂存为"common"前缀，0作为userId表示系统或通用
-            String relativePath = fileUploadService.uploadAvatar(file, 0L);
+            String contentType = file.getContentType() != null ? file.getContentType() : "";
+            String relativePath;
+            if (contentType.startsWith("audio/") || contentType.startsWith("video/")) {
+                // 音视频走专用上传逻辑（200MB限制，保存到 media/ 目录）
+                relativePath = fileUploadService.uploadMedia(file);
+            } else {
+                // 图片等文件走原有逻辑
+                relativePath = fileUploadService.uploadAvatar(file, 0L);
+            }
             String url = fileUploadService.getFileUrl(relativePath);
             return Result.success(url, "上传成功");
         } catch (Exception e) {

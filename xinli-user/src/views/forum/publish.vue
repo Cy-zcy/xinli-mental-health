@@ -104,7 +104,15 @@ function clearDraft() {
 }
 
 function goBack() {
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/forum')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 // 页面加载时获取分类和草稿
@@ -129,6 +137,9 @@ onBeforeUnmount(() => {
 
 <template>
   <FmPageLayout title="发布帖子" :navbar="{ back: true }" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <div class="flex flex-1 flex-col">
       <form @submit="onSubmit" class="flex flex-1 flex-col">
         <div class="flex-1 p-4 space-y-6">

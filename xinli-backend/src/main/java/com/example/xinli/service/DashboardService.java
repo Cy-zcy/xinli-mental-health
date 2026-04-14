@@ -116,6 +116,58 @@ public class DashboardService {
         }
         stats.setTrends(trends);
 
+        // ===== 用户增长趋势（近6个月） =====
+        List<DashboardStatsDTO.UserGrowthTrend> userGrowthTrends = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth targetMonth = currentMonth.minusMonths(i);
+            LocalDateTime monthStart = targetMonth.atDay(1).atStartOfDay();
+            LocalDateTime monthEnd = targetMonth.atEndOfMonth().atTime(23, 59, 59);
+
+            DashboardStatsDTO.UserGrowthTrend userTrend = new DashboardStatsDTO.UserGrowthTrend();
+            userTrend.setMonth(targetMonth.format(monthFormatter));
+
+            QueryWrapper<User> monthUserWrapper = new QueryWrapper<>();
+            monthUserWrapper.between("created_at", monthStart, monthEnd);
+            userTrend.setNewUsers(userMapper.selectCount(monthUserWrapper));
+
+            userGrowthTrends.add(userTrend);
+        }
+        stats.setUserGrowthTrends(userGrowthTrends);
+
+        // ===== 帖子分类统计 =====
+        List<DashboardStatsDTO.PostCategoryStats> postCategoryStats = new ArrayList<>();
+
+        // 按category字段分组统计
+        QueryWrapper<ForumPost> categoryWrapper = new QueryWrapper<>();
+        categoryWrapper.select("category, COUNT(*) as count")
+                       .groupBy("category");
+        List<ForumPost> categoryResults = forumPostMapper.selectList(categoryWrapper);
+
+        for (ForumPost post : categoryResults) {
+            DashboardStatsDTO.PostCategoryStats categoryStat = new DashboardStatsDTO.PostCategoryStats();
+            String category = post.getCategory();
+            // 转换分类名称为中文
+            if ("emotion".equals(category)) {
+                categoryStat.setCategory("情感倾诉");
+            } else if ("experience".equals(category)) {
+                categoryStat.setCategory("经验分享");
+            } else if ("question".equals(category)) {
+                categoryStat.setCategory("求助问答");
+            } else if ("daily".equals(category)) {
+                categoryStat.setCategory("日常记录");
+            } else {
+                categoryStat.setCategory(category != null ? category : "其他");
+            }
+
+            // 由于groupBy返回的对象只有category字段，count需要重新查询
+            QueryWrapper<ForumPost> countWrapper = new QueryWrapper<>();
+            countWrapper.eq("category", category);
+            categoryStat.setCount(forumPostMapper.selectCount(countWrapper));
+
+            postCategoryStats.add(categoryStat);
+        }
+        stats.setPostCategoryStats(postCategoryStats);
+
         return stats;
     }
 

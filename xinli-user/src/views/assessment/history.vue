@@ -63,6 +63,18 @@ function viewResult(record: AssessmentResultDTO) {
   })
 }
 
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/assessment')
+  }
+}
+
+function goHome() {
+  router.push('/')
+}
+
 onMounted(() => loadHistory())
 </script>
 
@@ -72,12 +84,13 @@ onMounted(() => loadHistory())
 
       <!-- 顶部导航栏 -->
       <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center gap-3 border-b border-gray-100 dark:border-gray-700">
-        <FmButton variant="ghost" size="icon" @click="router.back()">
+        <FmButton variant="ghost" size="icon" @click="goBack">
           <FmIcon name="i-carbon:arrow-left" class="text-5" />
         </FmButton>
-        <h2 class="font-bold text-gray-900 dark:text-white text-base">
+        <h2 class="font-bold text-gray-900 dark:text-white text-base flex-1">
           我的测评记录
         </h2>
+        <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60" @click="goHome" />
       </div>
 
       <!-- 加载中 -->

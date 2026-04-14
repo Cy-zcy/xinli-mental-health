@@ -45,6 +45,11 @@ export interface AssessmentResultDTO {
   resultSummary: string
   resultDetails: string
   createdAt: string
+  // 维度分析
+  dimensionScores?: Record<string, number>
+  dimensionNames?: string[]
+  dimensionValues?: number[]
+  dimensionChanges?: Record<string, number>
 }
 
 export interface SubmitAssessmentRequest {
@@ -94,4 +99,12 @@ export function submitAssessment(data: SubmitAssessmentRequest) {
  */
 export function getUserAssessmentHistory() {
   return api.get<AssessmentResultDTO[]>('/api/assessment/history')
+}
+
+/**
+ * 获取单条测评结果详情（含维度分析）
+ * GET /api/assessment/result/{recordId}
+ */
+export function getAssessmentResult(recordId: number) {
+  return api.get<AssessmentResultDTO>(`/api/assessment/result/${recordId}`)
 }

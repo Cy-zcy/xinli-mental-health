@@ -15,6 +15,31 @@ export interface DashboardStats {
   mildCount: number         // 轻度抑郁
   moderateCount: number     // 中度抑郁
   severeCount: number       // 重度抑郁（高风险）
+  // 测评趋势
+  trends: MonthlyTrend[]
+  // 用户增长趋势
+  userGrowthTrends: UserGrowthTrend[]
+  // 帖子分类统计
+  postCategoryStats: PostCategoryStats[]
+}
+
+// 月度测评趋势
+export interface MonthlyTrend {
+  month: string
+  total: number
+  highRisk: number
+}
+
+// 用户增长趋势
+export interface UserGrowthTrend {
+  month: string
+  newUsers: number
+}
+
+// 帖子分类统计
+export interface PostCategoryStats {
+  category: string
+  count: number
 }
 
 // 高风险用户记录

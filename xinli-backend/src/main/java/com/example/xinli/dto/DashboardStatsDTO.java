@@ -22,11 +22,29 @@ public class DashboardStatsDTO {
     // ===== 测评趋势统计（近6个月） =====
     private java.util.List<MonthlyTrend> trends;
 
+    // ===== 用户增长趋势（近6个月） =====
+    private java.util.List<UserGrowthTrend> userGrowthTrends;
+
+    // ===== 帖子分类统计 =====
+    private java.util.List<PostCategoryStats> postCategoryStats;
+
     @Data
     public static class MonthlyTrend {
         private String month;       // 月份 (如: 2023-10)
         private Long total;         // 该月总评测数
         private Long highRisk;      // 该月高危数(重度抑郁)
+    }
+
+    @Data
+    public static class UserGrowthTrend {
+        private String month;       // 月份 (如: 2023-10)
+        private Long newUsers;      // 该月新增用户数
+    }
+
+    @Data
+    public static class PostCategoryStats {
+        private String category;    // 帖子分类
+        private Long count;         // 该分类帖子数量
     }
 }
 

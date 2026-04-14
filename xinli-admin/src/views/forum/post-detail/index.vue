@@ -178,7 +178,7 @@
    * 返回列表
    */
   const goBack = () => {
-    router.push('/forum/posts')
+    router.push('/forum/management')
   }
 
   // 页面加载时获取数据

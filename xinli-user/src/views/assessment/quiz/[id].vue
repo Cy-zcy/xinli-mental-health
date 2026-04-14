@@ -43,11 +43,23 @@ async function loadAssessment() {
   }
   catch (e: any) {
     toast.error('加载失败', { description: e?.message || '无法获取问卷' })
-    router.back()
+    goBack()
   }
   finally {
     loading.value = false
   }
+}
+
+function goBack() {
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/assessment')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 function selectOption(questionId: number, optionId: number) {
@@ -120,7 +132,7 @@ onMounted(() => loadAssessment())
       <template v-else-if="assessment">
         <!-- 顶部导航 -->
         <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center gap-3 border-b border-gray-100 dark:border-gray-700">
-          <FmButton variant="ghost" size="icon" @click="router.back()">
+          <FmButton variant="ghost" size="icon" @click="goBack">
             <FmIcon name="i-carbon:arrow-left" class="text-5" />
           </FmButton>
           <div class="flex-1">
@@ -131,6 +143,7 @@ onMounted(() => loadAssessment())
               第 {{ currentIndex + 1 }} / {{ totalCount }} 题
             </p>
           </div>
+          <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60" @click="goHome" />
         </div>
 
         <!-- 进度条 -->

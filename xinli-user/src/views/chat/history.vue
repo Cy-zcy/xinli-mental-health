@@ -109,7 +109,15 @@ function formatRelativeTime(dateString: string) {
 }
 
 function goBack() {
-  router.back()
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/')
+  }
+}
+
+function goHome() {
+  router.push('/')
 }
 
 // 页面加载时获取会话列表
@@ -120,6 +128,9 @@ onMounted(() => {
 
 <template>
   <FmPageLayout title="聊天历史" :navbar="{ back: true }" @back="goBack">
+    <template #navbar-right>
+      <FmIcon name="i-carbon:home" class="text-xl text-gray-600 dark:text-gray-300 active:opacity-60 mr-2" @click="goHome" />
+    </template>
     <!-- 整体背景改用更柔和的渐变底色 -->
     <div class="flex flex-1 flex-col h-full bg-slate-50/50 dark:bg-slate-900/50 relative">
       <!-- 增加背景光晕效果 (Orb) -->

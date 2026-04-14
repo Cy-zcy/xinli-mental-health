@@ -15,11 +15,15 @@ const router = useRouter()
 const loading = ref(false)
 const refreshing = ref(false)
 const posts = ref<ForumPost[]>([])
+const myPosts = ref<ForumPost[]>([])
 const categories = ref<ForumCategory[]>([])
 const currentCategory = ref('')
+const currentTab = ref<'all' | 'mine'>('all')
 const currentPage = ref(1)
+const myCurrentPage = ref(1)
 const pageSize = ref(10)
 const hasMore = ref(true)
+const myHasMore = ref(true)
 const searchKeyword = ref('')
 // 记录当前用户已点赞的帖子 ID 集合（本地状态管理）
 const likedPostIds = ref<Set<number>>(new Set())
@@ -84,7 +88,12 @@ async function loadPosts(page = 1, append = false) {
 async function refresh() {
   refreshing.value = true
   currentPage.value = 1
-  await loadPosts(1, false)
+  myCurrentPage.value = 1
+  if (currentTab.value === 'all') {
+    await loadPosts(1, false)
+  } else {
+    await loadMyPosts(1, false)
+  }
 }
 
 // 加载更多
@@ -104,6 +113,49 @@ async function switchCategory(categoryId: string) {
 async function searchPosts() {
   currentPage.value = 1
   await loadPosts(1, false)
+}
+
+// 获取我的帖子列表
+async function loadMyPosts(page = 1, append = false) {
+  try {
+    loading.value = true
+    const response = await forumApi.getMyPosts({
+      page,
+      size: pageSize.value,
+    })
+
+    if (append) {
+      myPosts.value.push(...(response.records || []))
+    } else {
+      myPosts.value = response.records || []
+    }
+
+    myCurrentPage.value = page
+    myHasMore.value = (response.records?.length || 0) === pageSize.value
+
+  } catch (error: any) {
+    console.error('加载我的帖子失败:', error)
+    toast.error('加载失败', {
+      description: error.message || '无法加载我的帖子',
+    })
+  } finally {
+    loading.value = false
+    refreshing.value = false
+  }
+}
+
+// 加载更多我的帖子
+async function loadMoreMyPosts() {
+  if (!myHasMore.value || loading.value) return
+  await loadMyPosts(myCurrentPage.value + 1, true)
+}
+
+// 切换Tab
+async function switchTab(tab: 'all' | 'mine') {
+  currentTab.value = tab
+  if (tab === 'mine' && myPosts.value.length === 0) {
+    await loadMyPosts()
+  }
 }
 
 // 点赞/取消点赞帖子
@@ -162,6 +214,24 @@ function getCategoryName(categoryValue: string) {
   return category?.label || '未知分类'
 }
 
+// 获取状态文本
+function getStatusText(status: number) {
+  switch (status) {
+    case 0: return '待审核'
+    case 1: return '已发布'
+    default: return '未知'
+  }
+}
+
+// 获取状态样式
+function getStatusClass(status: number) {
+  switch (status) {
+    case 0: return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+    case 1: return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+    default: return 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-400'
+  }
+}
+
 // 页面加载时获取数据
 onMounted(async () => {
   await loadCategories()
@@ -183,8 +253,26 @@ onMounted(async () => {
             </FmButton>
           </div>
 
+          <!-- Tab 切换 -->
+          <div class="flex gap-2 mb-4">
+            <FmButton
+              :variant="currentTab === 'all' ? 'default' : 'outline'"
+              size="sm"
+              @click="switchTab('all')"
+            >
+              全部帖子
+            </FmButton>
+            <FmButton
+              :variant="currentTab === 'mine' ? 'default' : 'outline'"
+              size="sm"
+              @click="switchTab('mine')"
+            >
+              我的帖子
+            </FmButton>
+          </div>
+
           <!-- 搜索框 -->
-          <div class="flex gap-2">
+          <div v-if="currentTab === 'all'" class="flex gap-2">
             <FmInput
               v-model="searchKeyword"
               placeholder="搜索帖子..."
@@ -198,8 +286,8 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- 分类标签 -->
-        <div class="px-4 pb-3">
+        <!-- 分类标签（仅全部帖子显示） -->
+        <div v-if="currentTab === 'all'" class="px-4 pb-3">
           <div class="flex gap-2 overflow-x-auto scrollbar-hide">
             <FmButton
               v-for="category in categories"
@@ -215,8 +303,8 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- 帖子列表 -->
-      <div class="flex-1 overflow-y-auto">
+      <!-- 全部帖子列表 -->
+      <div v-if="currentTab === 'all'" class="flex-1 overflow-y-auto">
         <!-- 下拉刷新提示 -->
         <FmLoading v-if="refreshing" type="wave" :size="30" text="刷新中..." />
 
@@ -309,6 +397,119 @@ onMounted(async () => {
           </div>
 
           <div v-else-if="posts.length > 0" class="text-center py-6">
+            <div class="inline-flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
+              <div class="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
+              <span>已显示全部帖子</span>
+              <div class="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 我的帖子列表 -->
+      <div v-else class="flex-1 overflow-y-auto">
+        <!-- 下拉刷新提示 -->
+        <FmLoading v-if="refreshing" type="wave" :size="30" text="刷新中..." />
+
+        <!-- 加载状态 -->
+        <FmLoading v-if="loading && myPosts.length === 0" type="wave" text="加载中..." />
+
+        <!-- 空状态 -->
+        <div v-else-if="myPosts.length === 0" class="flex items-center justify-center h-64">
+          <div class="text-center">
+            <FmIcon name="i-carbon:document" class="text-12 text-gray-400 mb-4" />
+            <p class="text-gray-500">你还没有发布过帖子</p>
+            <FmButton class="mt-4" @click="createPost">
+              发布第一个帖子
+            </FmButton>
+          </div>
+        </div>
+
+        <!-- 我的帖子列表 -->
+        <div v-else class="p-4 space-y-4">
+          <div
+            v-for="(post, index) in myPosts"
+            :key="post.id"
+            class="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200"
+            :class="post.status === 1 ? 'cursor-pointer hover:border-blue-200 dark:hover:border-blue-600' : 'opacity-80'"
+            @click="post.status === 1 && viewPost(post)"
+          >
+            <!-- 帖子头部 -->
+            <div class="flex items-start justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center shadow-sm">
+                  <span class="text-white text-sm font-semibold">我</span>
+                </div>
+                <div>
+                  <div class="font-semibold text-gray-900 dark:text-white text-sm">我发布的</div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400">{{ formatTime(post.createdAt) }}</div>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <span class="px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 text-blue-600 dark:text-blue-400 text-xs rounded-full font-medium border border-blue-100 dark:border-blue-800">
+                  {{ getCategoryName(post.category) }}
+                </span>
+                <span
+                  class="px-3 py-1 text-xs rounded-full font-medium"
+                  :class="getStatusClass(post.status)"
+                >
+                  {{ getStatusText(post.status) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- 帖子内容 -->
+            <div class="mb-4">
+              <h3 class="font-bold text-gray-900 dark:text-white mb-2 line-clamp-2 text-lg leading-tight">
+                {{ post.title }}
+              </h3>
+              <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 leading-relaxed">
+                {{ post.content }}
+              </p>
+            </div>
+
+            <!-- 待审核提示 -->
+            <div v-if="post.status === 0" class="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+              <p class="text-sm text-yellow-700 dark:text-yellow-400">
+                <FmIcon name="i-carbon:time" class="mr-1" />
+                你的帖子正在审核中，审核通过后将对外展示
+              </p>
+            </div>
+
+            <!-- 帖子统计（已发布的显示） -->
+            <div v-if="post.status === 1" class="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-gray-700">
+              <div class="flex items-center gap-6">
+                <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <FmIcon name="i-carbon:view" class="text-4" />
+                  <span class="text-sm">{{ post.viewCount || 0 }}</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-gray-500 dark:text-gray-400">
+                  <FmIcon name="i-carbon:favorite" class="text-4" />
+                  <span class="text-sm">{{ post.likeCount || 0 }}</span>
+                </div>
+              </div>
+
+              <div class="text-xs text-gray-400 dark:text-gray-500">
+                {{ formatTime(post.updatedAt) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- 加载更多 -->
+          <div v-if="myHasMore" class="text-center py-6">
+            <FmButton
+              variant="outline"
+              :loading="loading"
+              @click="loadMoreMyPosts"
+              class="px-8 py-2 rounded-full border-2 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            >
+              <FmIcon v-if="!loading" name="i-carbon:chevron-down" class="mr-2" />
+              {{ loading ? '加载中...' : '加载更多' }}
+            </FmButton>
+          </div>
+
+          <div v-else-if="myPosts.length > 0" class="text-center py-6">
             <div class="inline-flex items-center gap-2 text-gray-400 dark:text-gray-500 text-sm">
               <div class="w-8 h-px bg-gray-300 dark:bg-gray-600"></div>
               <span>已显示全部帖子</span>

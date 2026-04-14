@@ -57,6 +57,13 @@
             <version>3.5.9</version>
         </dependency>
 
+        <!-- JSqlParser for MyBatis-Plus pagination plugin -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.9</version>
+        </dependency>
+
         <!-- MySQL Connector -->
         <dependency>
             <groupId>com.mysql</groupId>

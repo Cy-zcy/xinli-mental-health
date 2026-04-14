@@ -113,6 +113,26 @@ public class UserAssessmentController {
     }
 
     /**
+     * 4.1 获取单条测评结果详情（含维度分析）
+     * GET /api/assessment/result/{recordId}
+     * 需要登录
+     */
+    @GetMapping("/result/{recordId}")
+    public Result<AssessmentResultDTO> getAssessmentResult(
+            @PathVariable Long recordId,
+            HttpServletRequest httpRequest) {
+        try {
+            Long userId = getUserIdFromToken(httpRequest);
+            if (userId == null) {
+                return Result.error(401, "请先登录");
+            }
+            return Result.success(assessmentService.getAssessmentResultById(recordId, userId));
+        } catch (Exception e) {
+            return Result.error("获取测评结果失败: " + e.getMessage());
+        }
+    }
+
+    /**
      * 5. AI 测评结果分析报告
      * POST /api/assessment/ai-analysis
      * 请求体: { assessmentName, score, level, description }

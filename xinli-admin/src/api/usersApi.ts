@@ -55,7 +55,7 @@ export class AdminUserService {
   }) {
     return request.put({
       url: `/api/admin/users/${userId}/status`,
-      data
+      params: { status: data.status }  // 后端用 @RequestParam，必须用 params（查询串）
     })
   }
 

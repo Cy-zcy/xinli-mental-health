@@ -175,6 +175,29 @@ public class UserForumController {
             return Result.error("获取分类列表失败: " + e.getMessage());
         }
     }
+
+    /**
+     * 8. 获取我的帖子列表
+     * GET /api/forum/my-posts
+     * 包含所有状态的帖子（待审核、已通过、已拒绝）
+     */
+    @GetMapping("/my-posts")
+    public Result<Page<ForumPostDTO>> getMyPosts(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size,
+            HttpServletRequest httpRequest) {
+        try {
+            Long userId = getUserIdFromToken(httpRequest);
+            if (userId == null) {
+                return Result.error(401, "用户未登录");
+            }
+
+            Page<ForumPostDTO> posts = userForumService.getMyPosts(userId, page, size);
+            return Result.success(posts);
+        } catch (Exception e) {
+            return Result.error("获取我的帖子失败: " + e.getMessage());
+        }
+    }
     
     /**
      * 从HTTP请求中提取用户ID

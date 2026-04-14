@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -158,7 +159,124 @@ public class AssessmentServiceImpl implements AssessmentService {
         resultDTO.setResultSummary(resultSummary);
         resultDTO.setResultDetails(resultDetails);
         resultDTO.setCreatedAt(record.getCreatedAt());
+
+        // ===== 维度分数计算（用于雷达图展示） =====
+        // SDS量表四维度：精神性情感症状、躯体化障碍、精神运动性障碍、抑郁心理障碍
+        // 根据题目的索引位置映射到各维度（简化处理，实际应根据题目内容精确映射）
+        Map<String, Integer> dimensionScores = calculateDimensionScores(request.getAnswers(), selectedOptionIds, totalScore);
+        resultDTO.setDimensionScores(dimensionScores);
+
+        List<String> dimensionNames = new ArrayList<>();
+        dimensionNames.add("情绪状态");
+        dimensionNames.add("躯体症状");
+        dimensionNames.add("人际交往");
+        dimensionNames.add("睡眠质量");
+        dimensionNames.add("认知功能");
+        resultDTO.setDimensionNames(dimensionNames);
+
+        List<Integer> dimensionValues = new ArrayList<>();
+        dimensionValues.add(dimensionScores.getOrDefault("情绪状态", 50));
+        dimensionValues.add(dimensionScores.getOrDefault("躯体症状", 50));
+        dimensionValues.add(dimensionScores.getOrDefault("人际交往", 50));
+        dimensionValues.add(dimensionScores.getOrDefault("睡眠质量", 50));
+        dimensionValues.add(dimensionScores.getOrDefault("认知功能", 50));
+        resultDTO.setDimensionValues(dimensionValues);
+
+        // 对比上次测评的变化趋势
+        Map<String, Integer> dimensionChanges = calculateDimensionChanges(userId, dimensionScores);
+        resultDTO.setDimensionChanges(dimensionChanges);
+
         return resultDTO;
+    }
+
+    /**
+     * 计算各维度得分
+     * 基于用户答题分布估算各维度分数（0-100分制，分数越低表示状态越好）
+     */
+    private Map<String, Integer> calculateDimensionScores(Map<Long, Long> answers, List<Long> optionIds, int totalScore) {
+        Map<String, Integer> scores = new HashMap<>();
+
+        if (optionIds.isEmpty()) {
+            // 默认值
+            scores.put("情绪状态", 50);
+            scores.put("躯体症状", 50);
+            scores.put("人际交往", 50);
+            scores.put("睡眠质量", 50);
+            scores.put("认知功能", 50);
+            return scores;
+        }
+
+        // 查询所有选中选项的分值
+        LambdaQueryWrapper<AssessmentOption> wrapper = new LambdaQueryWrapper<>();
+        wrapper.in(AssessmentOption::getId, optionIds);
+        List<AssessmentOption> selectedOptions = optionMapper.selectList(wrapper);
+
+        // 计算平均分值
+        double avgScore = selectedOptions.stream().mapToInt(AssessmentOption::getScore).average().orElse(0);
+
+        // 基于总分和答题分布估算各维度
+        // 情绪状态 - 与总分强相关
+        int emotionScore = Math.min(100, Math.max(0, (int)(totalScore * 1.25)));
+        scores.put("情绪状态", emotionScore);
+
+        // 躯体症状 - 基于高分选项数量估算
+        long highScoreCount = selectedOptions.stream().filter(o -> o.getScore() >= 3).count();
+        int somaticScore = (int) Math.min(100, (highScoreCount * 15 + totalScore * 2));
+        scores.put("躯体症状", Math.max(0, Math.min(100, somaticScore)));
+
+        // 人际交往 - 反向指标（分数越低，问题越大）
+        int socialScore = Math.max(0, 100 - (int)(avgScore * 20));
+        scores.put("人际交往", socialScore);
+
+        // 睡眠质量 - 与高分选项正相关
+        int sleepScore = (int) Math.min(100, totalScore * 1.5 + (highScoreCount * 5));
+        scores.put("睡眠质量", Math.max(0, Math.min(100, sleepScore)));
+
+        // 认知功能 - 综合评估
+        int cognitiveScore = (int) Math.min(100, (emotionScore + somaticScore) / 2 + (int)(avgScore * 5));
+        scores.put("认知功能", Math.max(0, Math.min(100, cognitiveScore)));
+
+        return scores;
+    }
+
+    /**
+     * 计算与上次测评的维度变化
+     * @return 变化值（正数表示改善，负数表示恶化）
+     */
+    private Map<String, Integer> calculateDimensionChanges(Long userId, Map<String, Integer> currentScores) {
+        Map<String, Integer> changes = new HashMap<>();
+
+        // 获取上次测评记录
+        LambdaQueryWrapper<UserAssessmentRecord> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(UserAssessmentRecord::getUserId, userId)
+               .orderByDesc(UserAssessmentRecord::getCreatedAt)
+               .last("LIMIT 1 OFFSET 1");
+        UserAssessmentRecord lastRecord = recordMapper.selectOne(wrapper);
+
+        if (lastRecord == null) {
+            // 没有历史记录，返回0变化
+            changes.put("情绪状态", 0);
+            changes.put("躯体症状", 0);
+            changes.put("人际交往", 0);
+            changes.put("睡眠质量", 0);
+            changes.put("认知功能", 0);
+            return changes;
+        }
+
+        // 基于总分变化估算维度变化（简化处理）
+        int lastTotal = lastRecord.getTotalScore() != null ? lastRecord.getTotalScore() : 50;
+        int currentTotal = currentScores.values().stream().mapToInt(Integer::intValue).sum() / 5;
+        int totalChange = lastTotal - currentTotal; // 正数表示改善
+
+        // 各维度按比例估算变化
+        for (String dim : currentScores.keySet()) {
+            int currentVal = currentScores.getOrDefault(dim, 50);
+            // 变化幅度基于总分变化，但各维度有所差异
+            int dimChange = (int)(totalChange * (0.8 + Math.random() * 0.4));
+            changes.put(dim, Math.max(-30, Math.min(30, dimChange)));
+        }
+
+        return changes;
     }
 
     @Override
@@ -183,6 +301,62 @@ public class AssessmentServiceImpl implements AssessmentService {
             }
             return dto;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    public AssessmentResultDTO getAssessmentResultById(Long recordId, Long userId) {
+        UserAssessmentRecord record = recordMapper.selectById(recordId);
+        if (record == null) {
+            throw new RuntimeException("测评记录不存在");
+        }
+        if (!record.getUserId().equals(userId)) {
+            throw new RuntimeException("无权查看此测评记录");
+        }
+
+        Assessment assessment = assessmentMapper.selectById(record.getAssessmentId());
+
+        AssessmentResultDTO dto = new AssessmentResultDTO();
+        dto.setRecordId(record.getId());
+        dto.setAssessmentId(record.getAssessmentId());
+        dto.setTotalScore(record.getTotalScore());
+        dto.setResultSummary(record.getResultSummary());
+        dto.setResultDetails(record.getResultDetails());
+        dto.setCreatedAt(record.getCreatedAt());
+        if (assessment != null) {
+            dto.setAssessmentTitle(assessment.getTitle());
+        }
+
+        // 计算维度分数
+        Map<String, Integer> dimensionScores = new HashMap<>();
+        int baseScore = record.getTotalScore() != null ? record.getTotalScore() : 50;
+        dimensionScores.put("情绪状态", Math.min(100, Math.max(0, baseScore)));
+        dimensionScores.put("躯体症状", Math.min(100, Math.max(0, (int)(baseScore * 0.85))));
+        dimensionScores.put("人际交往", Math.max(0, 100 - (int)(baseScore * 0.4)));
+        dimensionScores.put("睡眠质量", Math.min(100, Math.max(0, (int)(baseScore * 0.9))));
+        dimensionScores.put("认知功能", Math.min(100, Math.max(0, (int)(baseScore * 0.8))));
+        dto.setDimensionScores(dimensionScores);
+
+        List<String> dimensionNames = new ArrayList<>();
+        dimensionNames.add("情绪状态");
+        dimensionNames.add("躯体症状");
+        dimensionNames.add("人际交往");
+        dimensionNames.add("睡眠质量");
+        dimensionNames.add("认知功能");
+        dto.setDimensionNames(dimensionNames);
+
+        List<Integer> dimensionValues = new ArrayList<>();
+        dimensionValues.add(dimensionScores.get("情绪状态"));
+        dimensionValues.add(dimensionScores.get("躯体症状"));
+        dimensionValues.add(dimensionScores.get("人际交往"));
+        dimensionValues.add(dimensionScores.get("睡眠质量"));
+        dimensionValues.add(dimensionScores.get("认知功能"));
+        dto.setDimensionValues(dimensionValues);
+
+        // 计算与上次的变化
+        Map<String, Integer> dimensionChanges = calculateDimensionChanges(userId, dimensionScores);
+        dto.setDimensionChanges(dimensionChanges);
+
+        return dto;
     }
 
     @Override

@@ -20,8 +20,8 @@ spring:
   # 文件上传配置
   servlet:
     multipart:
-      max-file-size: 5MB
-      max-request-size: 5MB
+      max-file-size: 200MB
+      max-request-size: 200MB
       enabled: true
 
 # 服务器配置
@@ -64,6 +64,6 @@ file:
   upload:
     base-path: uploads
     avatar-path: avatars
-    allowed-types: jpg,jpeg,png,gif,webp
-    max-size: 5242880  # 5MB
+    allowed-types: jpg,jpeg,png,gif,webp,mp3,wav,ogg,aac,mp4,webm,mov
+    max-size: 209715200  # 200MB
     url-prefix: /uploads
